@@ -3492,7 +3492,7 @@ button:disabled {
   max-width: 100% !important;
   padding: 20px !important;
   box-sizing: border-box !important;
-  align-items: start !important;
+  align-items: stretch !important;
 }
 
 .route-planner-panel {
@@ -3500,7 +3500,8 @@ button:disabled {
   grid-row: 1 !important;
   width: 100% !important;
   min-width: 0 !important;
-  height: 760px !important;
+  height: auto !important;
+  min-height: 760px !important;
   padding: 24px !important;
   box-sizing: border-box !important;
   overflow: visible !important;
@@ -3510,7 +3511,7 @@ button:disabled {
   grid-column: 2 !important;
   grid-row: 1 !important;
   width: 100% !important;
-  height: 760px !important;
+  height: 100% !important;
   min-height: 760px !important;
   box-sizing: border-box !important;
 }
