@@ -761,6 +761,37 @@ button:disabled {
 }
 
 /* =========================================================
+   ROAD & BRIDGE ACCESSIBILITY MAP MARKERS & CARDS
+========================================================= */
+.bridge-marker,
+.road-marker {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.bridge-marker:hover,
+.road-marker:hover {
+  transform: scale(1.2);
+  z-index: 9999 !important;
+}
+
+.infra-accessibility-card {
+  border-top: 5px solid #4f46e5 !important;
+}
+
+.traffic-engine-card {
+  border-top: 5px solid #d97706 !important;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* =========================================================
    AI ANALYSIS
 ========================================================= */
 
@@ -7965,3 +7996,623 @@ p,
 .sih-logout:active {
   transform: translateY(1px) !important;
 }
+
+/* =========================================================
+   NEW ENHANCED UI COMPONENT STYLES
+   ========================================================= */
+.weather-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #f8fafc;
+  border-bottom: 1px solid #334155;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.1);
+  overflow-x: auto;
+}
+
+.weather-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.weather-item span {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.weather-item strong {
+  font-size: 15px;
+  color: #38bdf8;
+  margin-top: 2px;
+}
+
+.weather-badge {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.weather-badge.normal {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.weather-badge.severe {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  animation: pulse 1.5s infinite;
+}
+
+.lang-select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.15);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.emergency-active-theme {
+  border-top: 5px solid #dc2626;
+  background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.ai-risk-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.ai-risk-panel h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.risk-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.risk-metric-grid div {
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  flex-direction: column;
+}
+
+.risk-metric-grid span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.risk-metric-grid strong {
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.risk-advisory {
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.5;
+  margin: 0;
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 6px;
+  border-left: 3px solid #2563eb;
+}
+
+.alternate-banner {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  border: 1px solid #fde68a;
+}
+
+.lower-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 0 25px 25px;
+}
+
+.sih-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.sih-card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sih-card-title h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.fleet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.fleet-item {
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.fleet-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.status-tag {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.status-tag.in-transit {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-tag.delayed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.fleet-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.full-width-card {
+  margin: 0 25px 30px;
+}
+
+.district-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-header, .table-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.2fr 1fr 2fr;
+  padding: 10px 14px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.table-header {
+  background: #f1f5f9;
+  font-weight: bold;
+  color: #334155;
+  border-radius: 8px;
+}
+
+.table-row {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.footer-bar {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pdf-button {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: bold;
+  color: white;
+  font-size: 15px;
+}
+
+/* =========================================================
+   RESTORED SECTIONS STYLES (RECOMMENDATION, ANALYSIS, COMPARISON)
+   ========================================================= */
+.full-width-section {
+  padding: 0 25px 20px;
+}
+
+.kicker-tag {
+  font-size: 12px;
+  font-weight: 800;
+  color: #2563eb;
+  letter-spacing: 0.5px;
+}
+
+.score-badge {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.route-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.metric-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-box span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.metric-box strong {
+  font-size: 16px;
+  color: #0f172a;
+  margin-top: 4px;
+}
+
+.metric-box.highlight {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.metric-box.highlight strong {
+  color: #1d4ed8;
+}
+
+.route-actions-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.secondary-button {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.secondary-button:hover {
+  background: #e2e8f0;
+}
+
+.analysis-badge {
+  font-size: 11px;
+  font-weight: bold;
+  background: #f5f3ff;
+  color: #6d28d9;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.cost-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.cost-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cost-item span {
+  font-size: 12px;
+  color: #475569;
+}
+
+.cost-item strong {
+  font-size: 18px;
+  color: #0f172a;
+  margin: 4px 0;
+}
+
+.cost-item small {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.comparison-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.comparison-card {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.comparison-card.active-choice {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(37,99,235,0.12);
+}
+
+.comp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.route-opt-tag {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.comp-score {
+  font-size: 12px;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.comp-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.comp-metrics div {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dashed #e2e8f0;
+  padding-bottom: 4px;
+}
+
+.comp-metrics span {
+  color: #64748b;
+}
+
+.select-route-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  width: 100%;
+}
+
+.select-route-btn.selected {
+  background: #16a34a;
+}
+
+/* =========================================================
+   EXECUTIVE PROFESSIONAL LOGIN PAGE & CARD ALIGNMENT STYLES
+========================================================= */
+
+.sih-login-page {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(37, 99, 235, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(15, 23, 42, 0.6) 0%, transparent 60%),
+    linear-gradient(135deg, #071d49 0%, #0b3b91 50%, #030f28 100%);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.sih-login-card {
+  width: 100%;
+  max-width: 450px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 20px;
+  padding: 40px 36px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.sih-login-header {
+  text-align: center;
+  margin-bottom: 28px;
+  width: 100%;
+}
+
+.sih-login-emblem {
+  font-size: 38px;
+  margin-bottom: 10px;
+  display: inline-block;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.sih-login-kicker {
+  display: inline-block;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #bfdbfe;
+  margin-bottom: 14px;
+}
+
+.sih-login-header h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+  line-height: 1.3;
+}
+
+.sih-login-header p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.sih-login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sih-login-form .form-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  width: 100%;
+}
+
+.sih-login-form .form-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+.sih-login-form .form-group input,
+.sih-login-form .form-group select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.sih-login-form .form-group input:focus,
+.sih-login-form .form-group select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.sih-login-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.sih-login-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.35);
+  transition: all 0.2s ease;
+  margin-top: 6px;
+}
+
+.sih-login-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+  transform: translateY(-1px);
+}
+
+.sih-login-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  width: 100%;
+  text-align: center;
+}
+
+.sih-login-footer span {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+
+

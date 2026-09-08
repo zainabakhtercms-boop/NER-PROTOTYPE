@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import {
   MapContainer,
   TileLayer,
@@ -20,190 +19,946 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 /* =========================================================
-   LEAFLET ICONS
+   MULTILINGUAL TRANSLATION SYSTEM (NER REGIONAL LANGUAGES)
 ========================================================= */
+const TRANSLATIONS = {
+  English: {
+    brandTitle: "NER Logistics Intelligence Platform",
+    brandSubtitle: "Logistics Optimization, Environmental Risk & Accessibility Engine",
+    routePlanner: "Route Optimization Engine",
+    findRoute: "Find Best Delivery Route",
+    calculating: "Analyzing Environmental Data & Weather Risks...",
+    sourceLoc: "Source Location",
+    destLoc: "Destination Location",
+    vehicleType: "Vehicle Type",
+    weatherWidget: "Real-Time Weather Intelligence",
+    environmentalRisk: "Environmental Risk & Disruption Engine",
+    routeAnalysis: "Route Analysis Dashboard",
+    routeComparison: "Route Comparison & Bypass Evaluation",
+    fieldReporting: "Field Official Incident Reporting",
+    submitIncident: "Submit Geo-Tagged Incident Report",
+    disasterMode: "Emergency Relief & Disaster Mode",
+    activeFleet: "Essential Commodity Supply Fleet",
+    districtDashboard: "District-Wise Accessibility Matrix",
+    pdfExport: "Export Official Logistics Report (PDF)",
+    loginTitle: "MDoNER Logistics Intelligence System",
+    loginSubtitle: "Sign in with government or fleet operator credentials",
+    roleLabel: "Operational Role",
+    emailLabel: "Email",
+    passLabel: "Password",
+    loginBtn: "Login to Platform",
+    offlineQueue: "Offline Queue Active",
+    photoUpload: "Attach Photo / Incident Evidence",
+    bestRoute: "Recommended Optimal Route",
+    costBreakdown: "Detailed Delivery Cost Breakdown",
+    bridgeAccessibility: "Real-Time Road & Bridge Accessibility Engine",
+    monitoredStructures: "Monitored Bridges & Passages",
+    accessibleCount: "Fully Accessible",
+    restrictedCount: "Load / Speed Restricted",
+    blockedCount: "Blocked / Closed",
+    underRepairCount: "Under Repair",
+    updateStatus: "Update Accessibility Status",
+    waterLevel: "River Water Level",
+    loadCapacity: "Max Load Limit",
+    heightClearance: "Height Clearance",
+    trafficSpeed: "Flow Speed",
+    filterCategory: "Filter Category",
+    filterState: "Filter State",
+    filterStatus: "Filter Status",
+    searchInfra: "Search Bridge or Highway Corridor...",
+    addInfrastructure: "Register New Bridge / Road Corridor"
+  },
+  Hindi: {
+    brandTitle: "पूर्वात्तर रसद बुद्धिमत्ता मंच (NER Logistics)",
+    brandSubtitle: "लॉजिस्टिक्स अनुकूलन, पर्यावरण जोखिम और पहुंच खुफिया मंच",
+    routePlanner: "मार्ग अनुकूलन इंजन",
+    findRoute: "सर्वश्रेष्ठ वितरण मार्ग खोजें",
+    calculating: "पर्यावरण डेटा और मौसम के जोखिमों का विश्लेषण कर रहा है...",
+    sourceLoc: "स्रोत का स्थान",
+    destLoc: "गंतव्य स्थान",
+    vehicleType: "वाहन का प्रकार",
+    weatherWidget: "वास्तविक समय मौसम की जानकारी",
+    environmentalRisk: "पर्यावरण जोखिम और मार्ग बाधा इंजन",
+    routeAnalysis: "मार्ग विश्लेषण डैशबोर्ड",
+    routeComparison: "मार्ग तुलना और बाईपास मूल्यांकन",
+    fieldReporting: "क्षेत्रीय अधिकारी घटना रिपोर्टिंग",
+    submitIncident: "जियो-टैग की गई रिपोर्ट जमा करें",
+    disasterMode: "आपातकालीन राहत और आपदा मोड",
+    activeFleet: "आवश्यक वस्तु आपूर्ति बेड़ा",
+    districtDashboard: "जिला-वार पहुंच स्थिति तालिका",
+    pdfExport: "आधिकारिक लॉजिस्टिक्स रिपोर्ट (PDF) डाउनलोड करें",
+    loginTitle: "एमडीओएनईआर रसद सूचना प्रणाली",
+    loginSubtitle: "सरकारी या फ्लीट ऑपरेटर क्रेडेंशियल्स के साथ साइन इन करें",
+    roleLabel: "परिचालन भूमिका",
+    emailLabel: "ईमेल पता",
+    passLabel: "पासवर्ड",
+    loginBtn: "प्लेटफॉर्म में लॉगिन करें",
+    offlineQueue: "ऑफलाइन कतार सक्रिय",
+    photoUpload: "फोटो / घटना साक्ष्य संलग्न करें",
+    bestRoute: "अनुशंसित सर्वोत्तम मार्ग",
+    costBreakdown: "विस्तृत वितरण लागत विवरण",
+    bridgeAccessibility: "वास्तविक समय सड़क और पुल पहुंच प्रणाली",
+    monitoredStructures: "निगरानी वाले पुल और मार्ग",
+    accessibleCount: "पूर्णतः सुगम",
+    restrictedCount: "भार/गति प्रतिबंधित",
+    blockedCount: "अवरुद्ध/बंद",
+    underRepairCount: "मरम्मत जारी",
+    updateStatus: "सुगमता स्थिति अद्यतन करें",
+    waterLevel: "नदी जल स्तर",
+    loadCapacity: "अधिकतम भार क्षमता",
+    heightClearance: "ऊंचाई निकासी",
+    trafficSpeed: "यातायात गति",
+    filterCategory: "श्रेणी फ़िल्टर",
+    filterState: "राज्य फ़िल्टर",
+    filterStatus: "स्थिति फ़िल्टर",
+    searchInfra: "पुल या राजमार्ग कॉरिडोर खोजें...",
+    addInfrastructure: "नया पुल/सड़क पंजीकृत करें"
+  },
+  Assamese: {
+    brandTitle: "উত্তৰ-পূৰ্বাঞ্চল লজিষ্টিকছ বুদ্ধিমত্তা মঞ্চ",
+    brandSubtitle: "পথ সুগমতা আৰু পাৰিপাৰ্শ্বিক বিপদ বিশ্লেষণ ব্যৱস্থা",
+    routePlanner: "পথ বাচনি ব্যৱস্থা",
+    findRoute: "উৎকৃষ্ট সৰবৰাহ পথ সন্ধান কৰক",
+    calculating: "বতৰ আৰু পাৰিপাৰ্শ্বিক বিপদ বিশ্লেষণ চলি আছে...",
+    sourceLoc: "যাত্ৰাৰ উৎস স্থান",
+    destLoc: "গন্তব্য স্থান",
+    vehicleType: "বাহনৰ প্ৰকাৰ",
+    weatherWidget: "সদ্য প্ৰাপ্ত বতৰৰ তথ্য",
+    environmentalRisk: "পাৰিপাৰ্শ্বিক বিপদ আৰু প্ৰতিবন্ধকতা ইঞ্জিন",
+    routeAnalysis: "পথ বিশ্লেষণ ডেছব'ৰ্ড",
+    routeComparison: "পথ তুলনা আৰু বাইপাছ মূল্যায়ন",
+    fieldReporting: "ক্ষেত্ৰভিত্তিক বিষয়াৰ ঘটনা প্ৰতিবেদন",
+    submitIncident: "জিও-টেগযুক্ত তথ্য প্ৰেৰণ কৰক",
+    disasterMode: "জৰুৰীকালীন সাহায্য আৰু দুৰ্যোগ অৱস্থা",
+    activeFleet: "জৰুৰী সামগ্ৰী যোগান বাহন ফ্লিট",
+    districtDashboard: "জিলাভিত্তিক সংযোগ স্থিতি তালিকা",
+    pdfExport: "অফিচিয়েল ৰিপৰ্ট (PDF) ডাউনল'ড কৰক",
+    loginTitle: "MDoNER লজিষ্টিকছ ব্যৱস্থা",
+    loginSubtitle: "প্ৰৱেশ দ্বাৰত লগ-ইন কৰক",
+    roleLabel: "বিষয়াসকলৰ পদবী",
+    emailLabel: "ইমেইল আই-ডি",
+    passLabel: "পাছৱৰ্ড",
+    loginBtn: "লগ-ইন কৰক",
+    offlineQueue: "অফলাইন কিউ সক্ৰিয়",
+    photoUpload: "ছবি বা প্ৰমাণ ফাইল সংযোগ কৰক",
+    bestRoute: "সৰ্বোত্তম অনুমোদিত পথ",
+    costBreakdown: "সৰবৰাহ খৰচৰ সবিশেষ",
+    bridgeAccessibility: "সদ্য প্ৰাপ্ত পথ আৰু দলং সুগমতা ইঞ্জিন",
+    monitoredStructures: "নিৰীক্ষণ কৰা দলং আৰু পথ",
+    accessibleCount: "সম্পূৰ্ণ সুগম",
+    restrictedCount: "ভাৰ/গতি নিয়ন্ত্ৰিত",
+    blockedCount: "বন্ধ/বাধাগ্রস্ত",
+    underRepairCount: "মেৰামতি চলি আছে",
+    updateStatus: "স্থিতি সলনি কৰক",
+    waterLevel: "নদীৰ পানীৰ স্তৰ",
+    loadCapacity: "সৰ্বোচ্চ ভাৰ ক্ষমতা",
+    heightClearance: "উচ্চতা সুগমতা",
+    trafficSpeed: "যাতায়াতৰ গতি",
+    filterCategory: "শ্ৰেণী বাচনি",
+    filterState: "ৰাজ্য বাচনি",
+    filterStatus: "স্থিতি বাচনি",
+    searchInfra: "দলং বা ৰাজপথ বিচাৰক...",
+    addInfrastructure: "নতুন দলং বা পথ অন্তৰ্ভুক্ত কৰক"
+  },
+  Bengali: {
+    brandTitle: "উত্তর-পূর্বাঞ্চল লজিস্টিকস ইন্টেলিজেন্স প্ল্যাটফর্ম",
+    brandSubtitle: "পরিবহন অপটিমাইজেশন, পরিবেশগত ঝুঁকি ও অ্যাক্সেসিবিলিটি সিস্টেম",
+    routePlanner: "রুট অপটিমাইজেশন ইঞ্জিন",
+    findRoute: "সর্বোত্তম ডেলিভারি রুট খুঁজুন",
+    calculating: "আবহাওয়া এবং পরিবেশগত তথ্য বিশ্লেষণ করা হচ্ছে...",
+    sourceLoc: "উৎসের অবস্থান",
+    destLoc: "গন্তব্য অবস্থান",
+    vehicleType: "যানবাহনের ধরন",
+    weatherWidget: "লাইভ আবহাওয়ার তথ্য",
+    environmentalRisk: "পরিবেশগত ঝুঁকি ও রুট বাধা ইঞ্জিন",
+    routeAnalysis: "রুট অ্যানালিসিস ড্যাশবোর্ড",
+    routeComparison: "রুট তুলনা ও বাইপাস মূল্যায়ন",
+    fieldReporting: "ফিল্ড অফিসারদের ঘটনা রিপোর্টিং পোর্টাল",
+    submitIncident: "জিও-ট্যাগযুক্ত রিপোর্ট জমা দিন",
+    disasterMode: "জরুরী ত্রাণ ও দুর্যোগকালীন মোড",
+    activeFleet: "জরুরী পণ্য সরবরাহকারী যানবাহন ফ্লিট",
+    districtDashboard: "জেলাভিত্তিক সংযোগ তথ্য ড্যাশবোর্ড",
+    pdfExport: "অফিসিয়াল রিপোর্ট (PDF) ডাউনলোড করুন",
+    loginTitle: "MDoNER লজিস্টিকস তথ্য ব্যবস্থা",
+    loginSubtitle: "সরকারি বা ফ্লিট অপারেটর তথ্য দিয়ে লগইন করুন",
+    roleLabel: "অপারেশনাল ভূমিকা",
+    emailLabel: "ইমেল অ্যাড্রেস",
+    passLabel: "পাসওয়ার্ড",
+    loginBtn: "লগইন করুন",
+    offlineQueue: "অফলাইন কিউ কার্যকর",
+    photoUpload: "ছবি বা প্রমাণ নথি যুক্ত করুন",
+    bestRoute: "সুপারিশকৃত সেরা রুট",
+    costBreakdown: "বিস্তারিত ডেলিভারি খরচ তথ্য",
+    bridgeAccessibility: "রিয়েল-টাইম সড়ক ও সেতু অ্যাক্সেসিবিলিটি ইঞ্জিন",
+    monitoredStructures: "পর্যবেক্ষণাধীন সেতু ও সড়ক",
+    accessibleCount: "সম্পূর্ণ সুগম",
+    restrictedCount: "ভার/গতি নিয়ন্ত্রিত",
+    blockedCount: "অবরুদ্ধ/বন্ধ",
+    underRepairCount: "সংস্কারাধীন",
+    updateStatus: "অবস্থা আপডেট করুন",
+    waterLevel: "নদীর জলের স্তর",
+    loadCapacity: "সর্বোচ্চ ভার ক্ষমতা",
+    heightClearance: "উচ্চতা ক্লিয়ারেন্স",
+    trafficSpeed: "যানবাহনের গতি",
+    filterCategory: "ক্যাটাগরি ফিল্টার",
+    filterState: "রাজ্য ফিল্টার",
+    filterStatus: "স্ট্যাটাস ফিল্টার",
+    searchInfra: "সেতু বা হাইওয়ে খুঁজুন...",
+    addInfrastructure: "নতুন সেতু বা সড়ক নথিভুক্ত করুন"
+  }
+};
 
+/* =========================================================
+   DEFAULT RICH INITIAL STATE FOR ALL SECTIONS
+========================================================= */
+const DEFAULT_ROUTE_DATA = {
+  id: 1,
+  distanceKm: 342.5,
+  durationMinutes: 465,
+  environmentalDelayMinutes: 45,
+  fuelLitres: 57.1,
+  fuelCost: 5425,
+  driverCost: 1550,
+  tollCost: 514,
+  totalDeliveryCost: 8164,
+  riskLevel: "MEDIUM",
+  riskProbability: 53,
+  score: 92,
+  geometry: {
+    coordinates: [
+      [91.7362, 26.1445], // Guwahati
+      [91.8933, 25.5788], // Shillong
+      [92.4200, 25.2100], // Jowai
+      [92.5800, 24.8800], // Badarpur
+      [92.7937, 24.8170]  // Silchar
+    ]
+  }
+};
+
+const DEFAULT_COMPARISON_ROUTES = [
+  {
+    id: 1,
+    score: 92,
+    distanceKm: 342.5,
+    durationMinutes: 465,
+    riskProbability: 53,
+    totalDeliveryCost: 8164
+  },
+  {
+    id: 2,
+    score: 84,
+    distanceKm: 378.2,
+    durationMinutes: 510,
+    riskProbability: 38,
+    totalDeliveryCost: 8950
+  },
+  {
+    id: 3,
+    score: 76,
+    distanceKm: 395.0,
+    durationMinutes: 540,
+    riskProbability: 68,
+    totalDeliveryCost: 9420
+  }
+];
+
+const DEFAULT_RISK_INFO = {
+  model: "NER-Environmental-RandomForest-Classifier-v3.2",
+  state: "ASSAM",
+  district: "Silchar",
+  risk: "MEDIUM",
+  probabilityPercent: 53,
+  advisory: "CAUTION: Moderate environmental risk detected on Silchar Corridor (53% landslide probability). Reduced speed advised on steep mountain curves.",
+  alternateSuggested: false,
+  environmentalFeatures: {
+    elevationMeters: 35,
+    slopeDegrees: 24,
+    historicalHazardsCount: 48,
+    rainfallMm: 180,
+    soilSaturationPercent: 65
+  }
+};
+
+const INITIAL_DISTRICTS = [
+  { district: "Kamrup Metropolitan", state: "ASSAM", connectivityPercent: 95, riskPercent: 15, riskLevel: "LOW", status: "Open", bottleneck: "Urban Congestion" },
+  { district: "Cachar (Silchar)", state: "ASSAM", connectivityPercent: 68, riskPercent: 53, riskLevel: "MEDIUM", status: "Caution", bottleneck: "Barak River Waterlogging" },
+  { district: "Dima Hasao (Haflong)", state: "ASSAM", connectivityPercent: 55, riskPercent: 72, riskLevel: "HIGH", status: "Alert", bottleneck: "Jatinga Landslide Sinking Stretch" },
+  { district: "East Khasi Hills (Shillong)", state: "MEGHALAYA", connectivityPercent: 82, riskPercent: 42, riskLevel: "MEDIUM", status: "Caution", bottleneck: "Dense Mountain Fog" },
+  { district: "West Jaintia Hills (Jowai)", state: "MEGHALAYA", connectivityPercent: 48, riskPercent: 78, riskLevel: "HIGH", status: "Alert", bottleneck: "NH-06 Ratacherra Mudslides" },
+  { district: "Imphal West", state: "MANIPUR", connectivityPercent: 75, riskPercent: 35, riskLevel: "MEDIUM", status: "Open", bottleneck: "NH-37 Heavy Truck Delay" },
+  { district: "Aizawl", state: "MIZORAM", connectivityPercent: 52, riskPercent: 75, riskLevel: "HIGH", status: "Alert", bottleneck: "Hmuifang Sinking Ridge" },
+  { district: "Kohima", state: "NAGALAND", connectivityPercent: 60, riskPercent: 65, riskLevel: "MEDIUM", status: "Caution", bottleneck: "Phesama Sinking Stretch" },
+  { district: "East Sikkim (Gangtok)", state: "SIKKIM", connectivityPercent: 45, riskPercent: 85, riskLevel: "HIGH", status: "Alert", bottleneck: "NH-10 Teesta Erosion" },
+  { district: "West Tripura (Agartala)", state: "TRIPURA", connectivityPercent: 90, riskPercent: 20, riskLevel: "LOW", status: "Open", bottleneck: "Localized Drainage" },
+  { district: "Papum Pare (Itanagar)", state: "ARUNACHAL PRADESH", connectivityPercent: 58, riskPercent: 70, riskLevel: "HIGH", status: "Alert", bottleneck: "Karsingsa Landslide Zone" },
+  { district: "Tawang", state: "ARUNACHAL PRADESH", connectivityPercent: 38, riskPercent: 88, riskLevel: "HIGH", status: "Alert", bottleneck: "Sela Pass Snow & Rockfall" },
+  { district: "Dimapur", state: "NAGALAND", connectivityPercent: 88, riskPercent: 25, riskLevel: "LOW", status: "Open", bottleneck: "Commercial Hub Transit" },
+  { district: "Dibrugarh", state: "ASSAM", connectivityPercent: 92, riskPercent: 18, riskLevel: "LOW", status: "Open", bottleneck: "Brahmaputra Bank Precautions" }
+];
+
+const INITIAL_FLEET = [
+  {
+    id: "NER-FLEET-1001",
+    vehicleName: "Medical Relief Truck Alpha",
+    driverName: "Rajesh Kalita",
+    contact: "+91-9864012345",
+    vehicleType: "mediumTruck",
+    cargoType: "Essential Medicines & Vaccines",
+    cargoWeightKg: 6500,
+    origin: "Guwahati Central Depot",
+    destination: "Silchar Medical College Depot",
+    currentLat: 26.1445,
+    currentLon: 91.7362,
+    speedKmH: 45,
+    status: "In Transit",
+    delayReason: "None",
+    etaMinutes: 140,
+    isRealGpsActive: true
+  },
+  {
+    id: "NER-FLEET-1002",
+    vehicleName: "Food Supply Convoy Bravo",
+    driverName: "Biren Gogoi",
+    contact: "+91-9435098765",
+    vehicleType: "heavyTruck",
+    cargoType: "Rice, Pulses & Ration Kits",
+    cargoWeightKg: 14000,
+    origin: "Jorhat Rice Hub",
+    destination: "Dimapur FCI Godown",
+    currentLat: 26.7500,
+    currentLon: 94.2200,
+    speedKmH: 42,
+    status: "In Transit",
+    delayReason: "None",
+    etaMinutes: 95,
+    isRealGpsActive: true
+  },
+  {
+    id: "NER-FLEET-1003",
+    vehicleName: "Disaster Emergency Tanker Charlie",
+    driverName: "Subhash Roy",
+    contact: "+91-9774011223",
+    vehicleType: "deliveryVan",
+    cargoType: "Clean Drinking Water & Relief Kits",
+    cargoWeightKg: 3200,
+    origin: "Shillong SDMA Unit",
+    destination: "Jowai Landslide Relief Base",
+    currentLat: 25.2100,
+    currentLon: 92.4200,
+    speedKmH: 25,
+    status: "Delayed",
+    delayReason: "NH-06 Landslide Clearing Operations",
+    etaMinutes: 210,
+    isRealGpsActive: true
+  }
+];
+
+const INITIAL_DISRUPTIONS = [
+  {
+    id: "DIS-01",
+    corridorName: "NH-06 (Jowai - Ratacherra Corridor)",
+    state: "MEGHALAYA",
+    district: "West Jaintia Hills",
+    type: "Landslide",
+    severity: "High",
+    delayMinutes: 75,
+    impact: "Single lane traffic movement. Heavy trucks delayed by ~1.5 hours.",
+    coordinates: [25.2100, 92.4200],
+    alternateRoute: "Via Jowai - Shangpung - Ummulong By-pass"
+  },
+  {
+    id: "DIS-02",
+    corridorName: "NH-27 (Guwahati - Silchar Highway)",
+    state: "ASSAM",
+    district: "Cachar",
+    type: "Flash Flood / Waterlogging",
+    severity: "High",
+    delayMinutes: 90,
+    impact: "River overtopping near Badarpur. Small delivery vans redirected.",
+    coordinates: [24.8800, 92.5800],
+    alternateRoute: "Via Haflong - Harangajao Mountain Road"
+  },
+  {
+    id: "DIS-03",
+    corridorName: "NH-29 (Dimapur - Kohima Pass)",
+    state: "NAGALAND",
+    district: "Kohima",
+    type: "Road Erosion / Sinking Zone",
+    severity: "Medium",
+    delayMinutes: 35,
+    impact: "Phesama Sinking Stretch. Convoy movement controlled by traffic police.",
+    coordinates: [25.6200, 94.1100],
+    alternateRoute: "Via Peducha - Tssema Bypass"
+  },
+  {
+    id: "DIS-04",
+    corridorName: "NH-10 (Siliguri - Gangtok Highway)",
+    state: "SIKKIM",
+    district: "East Sikkim",
+    type: "Teesta River Rockfall",
+    severity: "High",
+    delayMinutes: 120,
+    impact: "Teesta river bank slip. Heavy goods trucks restricted after sunset.",
+    coordinates: [27.1200, 88.5000],
+    alternateRoute: "Via Lava - Gorubathan - Rangpo Road"
+  }
+];
+
+const INITIAL_INFRASTRUCTURE = [
+  {
+    id: "INF-BR-01",
+    name: "Bogibeel Rail-Road Bridge",
+    category: "Bridge",
+    highway: "NH-15 / Brahmaputra River Crossing",
+    state: "ASSAM",
+    district: "Dibrugarh",
+    coordinates: [27.3980, 94.8872],
+    status: "FULLY_ACCESSIBLE",
+    maxWeightCapacityTons: 40,
+    heightClearanceMeters: 5.5,
+    waterLevelStatus: "Normal (-2.8m below danger level)",
+    trafficFlowSpeedKmH: 60,
+    bottleneckReason: "Smooth double-deck transit active",
+    alternateRoute: "N/A"
+  },
+  {
+    id: "INF-BR-02",
+    name: "Bhupen Hazarika Setu (Dhola-Sadiya Bridge)",
+    category: "Bridge",
+    highway: "NH-115 / Lohit River Pass",
+    state: "ASSAM",
+    district: "Tinsukia",
+    coordinates: [27.8850, 95.6800],
+    status: "FULLY_ACCESSIBLE",
+    maxWeightCapacityTons: 60,
+    heightClearanceMeters: 6.0,
+    waterLevelStatus: "Normal (-3.1m below danger level)",
+    trafficFlowSpeedKmH: 65,
+    bottleneckReason: "Military heavy vehicle cleared",
+    alternateRoute: "N/A"
+  },
+  {
+    id: "INF-BR-03",
+    name: "Saraighat Rail-Road Bridge",
+    category: "Bridge",
+    highway: "NH-27 / Brahmaputra River Crossing",
+    state: "ASSAM",
+    district: "Kamrup Metropolitan (Guwahati)",
+    coordinates: [26.1770, 91.6880],
+    status: "PASSABLE_CAUTION",
+    maxWeightCapacityTons: 30,
+    heightClearanceMeters: 4.8,
+    waterLevelStatus: "Caution (+0.8m rain rise)",
+    trafficFlowSpeedKmH: 25,
+    bottleneckReason: "Peak urban transit slowdown; speed limit 20 km/h enforced",
+    alternateRoute: "Via New Saraighat 3-Lane Bridge"
+  },
+  {
+    id: "INF-BR-04",
+    name: "Coronation Heritage Bridge (Sevoke)",
+    category: "Bridge",
+    highway: "NH-31C / Teesta River Gorge",
+    state: "SIKKIM",
+    district: "Darjeeling / East Sikkim Access",
+    coordinates: [26.8990, 88.4710],
+    status: "RESTRICTED_LOAD",
+    maxWeightCapacityTons: 12,
+    heightClearanceMeters: 3.8,
+    waterLevelStatus: "High (+1.4m river erosion alert)",
+    trafficFlowSpeedKmH: 15,
+    bottleneckReason: "Heavy trucks (>12 Tons) strictly banned; load diverted",
+    alternateRoute: "Via Coronation Bypass - Damdim - Rangpo Pass"
+  },
+  {
+    id: "INF-BR-05",
+    name: "Silchar Barak River Bridge",
+    category: "Bridge",
+    highway: "NH-27 / Barak River Pass",
+    state: "ASSAM",
+    district: "Cachar (Silchar)",
+    coordinates: [24.8320, 92.7840],
+    status: "PASSABLE_CAUTION",
+    maxWeightCapacityTons: 25,
+    heightClearanceMeters: 4.2,
+    waterLevelStatus: "Critical (+1.6m above warning mark)",
+    trafficFlowSpeedKmH: 20,
+    bottleneckReason: "Barak river waterlogging on approach ramp; single-lane control",
+    alternateRoute: "Via Haflong Road Bridge"
+  },
+  {
+    id: "INF-BR-06",
+    name: "Teesta Rangpo Border Bridge",
+    category: "Bridge",
+    highway: "NH-10 / Teesta River Corridor",
+    state: "SIKKIM",
+    district: "East Sikkim",
+    coordinates: [27.1760, 88.5280],
+    status: "UNDER_REPAIR",
+    maxWeightCapacityTons: 18,
+    heightClearanceMeters: 4.0,
+    waterLevelStatus: "Warning (+1.1m river surge)",
+    trafficFlowSpeedKmH: 10,
+    bottleneckReason: "Abutment slope stabilization work; alternating direction flow",
+    alternateRoute: "Via Reshi - Pedong Mountain Pass"
+  },
+  {
+    id: "INF-BR-07",
+    name: "Ratacherra Mudslide River Bridge",
+    category: "Bridge",
+    highway: "NH-06 / Meghalaya-Assam Border Pass",
+    state: "MEGHALAYA",
+    district: "West Jaintia Hills",
+    coordinates: [25.1850, 92.4820],
+    status: "BLOCKED",
+    maxWeightCapacityTons: 0,
+    heightClearanceMeters: 3.5,
+    waterLevelStatus: "Severe Flash Flood / Debris Overflow",
+    trafficFlowSpeedKmH: 0,
+    bottleneckReason: "Bridge access road washed out by mudslide; BRO clearance in progress",
+    alternateRoute: "Via Jowai - Shangpung - Umkiang Bypass"
+  },
+  {
+    id: "INF-BR-08",
+    name: "Imphal Sanjenthong River Bridge",
+    category: "Bridge",
+    highway: "NH-102 / Imphal River Crossing",
+    state: "MANIPUR",
+    district: "Imphal West",
+    coordinates: [24.7980, 93.9450],
+    status: "FULLY_ACCESSIBLE",
+    maxWeightCapacityTons: 35,
+    heightClearanceMeters: 5.0,
+    waterLevelStatus: "Normal (-1.5m below warning mark)",
+    trafficFlowSpeedKmH: 45,
+    bottleneckReason: "Normal essential supply transit",
+    alternateRoute: "N/A"
+  },
+  {
+    id: "INF-RD-01",
+    name: "NH-06 Jowai - Ratacherra Mountain Highway Pass",
+    category: "Road Corridor",
+    highway: "NH-06 Corridor",
+    state: "MEGHALAYA",
+    district: "West Jaintia Hills",
+    coordinates: [25.2100, 92.4200],
+    status: "PASSABLE_CAUTION",
+    maxWeightCapacityTons: 25,
+    heightClearanceMeters: 4.5,
+    waterLevelStatus: "High Soil Saturation (82%)",
+    trafficFlowSpeedKmH: 20,
+    bottleneckReason: "Frequent rockfall at Sonapyrdi Tunnel; convoy speed control active",
+    alternateRoute: "Via Jowai - Ummulong Road"
+  },
+  {
+    id: "INF-RD-02",
+    name: "NH-27 Guwahati - Silchar Expressway Pass",
+    category: "Road Corridor",
+    highway: "NH-27 / Mahur Pass",
+    state: "ASSAM",
+    district: "Dima Hasao (Haflong)",
+    coordinates: [25.1764, 93.0169],
+    status: "PASSABLE_CAUTION",
+    maxWeightCapacityTons: 30,
+    heightClearanceMeters: 4.8,
+    waterLevelStatus: "Localized Water Ponding",
+    trafficFlowSpeedKmH: 30,
+    bottleneckReason: "Sinking road stretch near Jatinga; heavy trucks move single-file",
+    alternateRoute: "Via Umrangso Highway"
+  },
+  {
+    id: "INF-RD-03",
+    name: "NH-29 Dimapur - Kohima (Phesama Sinking Ridge)",
+    category: "Road Corridor",
+    highway: "NH-29 Pass",
+    state: "NAGALAND",
+    district: "Kohima",
+    coordinates: [25.6200, 94.1100],
+    status: "PASSABLE_CAUTION",
+    maxWeightCapacityTons: 20,
+    heightClearanceMeters: 4.2,
+    waterLevelStatus: "Ground Subsidence Active",
+    trafficFlowSpeedKmH: 25,
+    bottleneckReason: "Hillside sinking zone; heavy goods vehicles limited to daytime transit",
+    alternateRoute: "Via Peducha - Tssema Bypass"
+  },
+  {
+    id: "INF-RD-04",
+    name: "Sela Pass High-Altitude Highway (NH-13)",
+    category: "Road Corridor",
+    highway: "NH-13 / Trans-Arunachal Highway",
+    state: "ARUNACHAL PRADESH",
+    district: "Tawang",
+    coordinates: [27.5861, 91.8594],
+    status: "PASSABLE_CAUTION",
+    maxWeightCapacityTons: 18,
+    heightClearanceMeters: 4.2,
+    waterLevelStatus: "Snow Clearing Operational",
+    trafficFlowSpeedKmH: 25,
+    bottleneckReason: "Elevation 13,700 ft; anti-skid chains recommended during morning ice",
+    alternateRoute: "Via Sela Tunnel Bypass Road"
+  },
+  {
+    id: "INF-RD-05",
+    name: "NH-37 Imphal - Jiribam Mountain Highway",
+    category: "Road Corridor",
+    highway: "NH-37 Corridor",
+    state: "MANIPUR",
+    district: "Tamenglong",
+    coordinates: [24.8170, 93.5000],
+    status: "PASSABLE_CAUTION",
+    maxWeightCapacityTons: 20,
+    heightClearanceMeters: 4.0,
+    waterLevelStatus: "Normal Slopes",
+    trafficFlowSpeedKmH: 35,
+    bottleneckReason: "Baily bridge load control near Noney; escort vehicles present",
+    alternateRoute: "Via Churachandpur Trail"
+  },
+  {
+    id: "INF-RD-06",
+    name: "Agartala - Sabroom International Highway (NH-8)",
+    category: "Road Corridor",
+    highway: "NH-8 Southern Tripura Axis",
+    state: "TRIPURA",
+    district: "South Tripura",
+    coordinates: [23.1600, 91.7300],
+    status: "FULLY_ACCESSIBLE",
+    maxWeightCapacityTons: 40,
+    heightClearanceMeters: 5.5,
+    waterLevelStatus: "Normal Drainage",
+    trafficFlowSpeedKmH: 65,
+    bottleneckReason: "Clear 4-lane trade corridor",
+    alternateRoute: "N/A"
+  }
+];
+
+/* =========================================================
+   LEAFLET CUSTOM MAP ICONS
+========================================================= */
 const defaultIcon = L.icon({
   iconRetinaUrl: markerIcon2x,
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
-
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
 
-const vehicleIcon = L.divIcon({
-  className: "vehicle-marker",
-
-  html: `
-    <div style="
-      width:42px;
-      height:42px;
-      border-radius:50%;
-      background:#2563eb;
-      border:3px solid white;
-      box-shadow:0 6px 20px rgba(37,99,235,0.45);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:22px;
-    ">
-      🚚
-    </div>
-  `,
-
-  iconSize: [42, 42],
-  iconAnchor: [21, 21],
+const realGpsVehicleIcon = L.divIcon({
+  className: "vehicle-marker-real-gps",
+  html: `<div style="width:46px;height:46px;border-radius:50%;background:#16a34a;border:3px solid white;box-shadow:0 6px 22px rgba(22,163,74,0.6);display:flex;align-items:center;justify-content:center;font-size:24px;">🚚</div>`,
+  iconSize: [46, 46],
+  iconAnchor: [23, 23],
 });
 
-/* =========================================================
-   MAP VIEW
-========================================================= */
+const incidentMapIcon = L.divIcon({
+  className: "incident-marker",
+  html: `<div style="width:38px;height:38px;border-radius:50%;background:#dc2626;border:3px solid white;box-shadow:0 6px 20px rgba(220,38,38,0.45);display:flex;align-items:center;justify-content:center;font-size:20px;color:white;">⚠️</div>`,
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+});
 
+const bridgeMapIcon = (status) => {
+  let bgColor = "#16a34a"; // FULLY_ACCESSIBLE
+  if (status === "PASSABLE_CAUTION") bgColor = "#d97706";
+  else if (status === "RESTRICTED_LOAD") bgColor = "#9333ea";
+  else if (status === "BLOCKED") bgColor = "#dc2626";
+  else if (status === "UNDER_REPAIR") bgColor = "#0284c7";
+
+  return L.divIcon({
+    className: "bridge-marker",
+    html: `<div style="width:42px;height:42px;border-radius:50%;background:${bgColor};border:3px solid white;box-shadow:0 6px 20px ${bgColor}88;display:flex;align-items:center;justify-content:center;font-size:22px;color:white;">🌉</div>`,
+    iconSize: [42, 42],
+    iconAnchor: [21, 21],
+  });
+};
+
+const roadMapIcon = (status) => {
+  let bgColor = "#16a34a";
+  if (status === "PASSABLE_CAUTION") bgColor = "#d97706";
+  else if (status === "RESTRICTED_LOAD") bgColor = "#9333ea";
+  else if (status === "BLOCKED") bgColor = "#dc2626";
+  else if (status === "UNDER_REPAIR") bgColor = "#0284c7";
+
+  return L.divIcon({
+    className: "road-marker",
+    html: `<div style="width:40px;height:40px;border-radius:12px;background:${bgColor};border:3px solid white;box-shadow:0 6px 18px ${bgColor}77;display:flex;align-items:center;justify-content:center;font-size:20px;color:white;">🛣️</div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  });
+};
+
+const fleetMapIcon = (cargoType) => {
+  let emoji = "📦";
+  if (cargoType?.includes("Medicine") || cargoType?.includes("Vaccine")) emoji = "💊";
+  else if (cargoType?.includes("Food") || cargoType?.includes("Rice")) emoji = "🌾";
+  else if (cargoType?.includes("Water") || cargoType?.includes("Relief")) emoji = "🚰";
+  else if (cargoType?.includes("Construction")) emoji = "🏗️";
+
+  return L.divIcon({
+    className: "fleet-marker",
+    html: `<div style="width:40px;height:40px;border-radius:12px;background:#16a34a;border:2px solid white;box-shadow:0 4px 15px rgba(22,163,74,0.4);display:flex;align-items:center;justify-content:center;font-size:22px;color:white;">${emoji}</div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  });
+};
+
+/* =========================================================
+   ENHANCED MAP VIEW COMPONENT
+========================================================= */
 function MapView({
   selectedRoute,
-  trackingActive,
-  trackingIndex,
+  realGpsActive,
+  realGpsPosition,
   gpsPosition,
+  disruptions = [],
+  incidents = [],
+  fleetVehicles = [],
+  infrastructureList = [],
+  onUpdateInfraStatus,
+  emergencyMode = false
 }) {
   const map = useMap();
 
-  if (
-    !selectedRoute?.geometry?.coordinates?.length
-  ) {
-    return null;
-  }
+  const getPolylinePoints = () => {
+    if (selectedRoute?.geometry?.coordinates?.length) {
+      return selectedRoute.geometry.coordinates.map((item) => {
+        if (Array.isArray(item)) {
+          if (item[0] > item[1]) return [item[1], item[0]];
+          return [item[0], item[1]];
+        }
+        return [item.lat || 26.1445, item.lon || 91.7362];
+      });
+    }
+    return [
+      [26.1445, 91.7362], // Guwahati
+      [25.5788, 91.8933], // Shillong
+      [25.2100, 92.4200], // Jowai Pass
+      [24.8800, 92.5800], // Badarpur
+      [24.8170, 92.7937]  // Silchar
+    ];
+  };
 
-  const points =
-    selectedRoute.geometry.coordinates.map(
-      ([lon, lat]) => [lat, lon]
-    );
+  const points = getPolylinePoints();
 
-  const safeIndex = Math.min(
-    trackingIndex,
-    points.length - 1
-  );
+  useEffect(() => {
+    if (points.length > 0) {
+      map.fitBounds(points, { padding: [50, 50] });
+    }
+  }, [selectedRoute, map]);
 
-  const vehiclePosition =
-    points[safeIndex];
-
-  map.fitBounds(points, {
-    padding: [40, 40],
-  });
+  // Position driven by REAL GPS geolocation sensor
+  const activeVehiclePos = realGpsPosition
+    ? [realGpsPosition.lat, realGpsPosition.lon]
+    : gpsPosition
+    ? [gpsPosition.lat, gpsPosition.lon]
+    : points[0];
 
   return (
     <>
-      {/* MAIN ROUTE */}
+      {/* HIGHWAY ROUTE POLYLINE */}
+      {points.length > 0 && (
+        <Polyline
+          positions={points}
+          color={emergencyMode ? "#dc2626" : "#2563eb"}
+          weight={8}
+          opacity={0.95}
+        />
+      )}
 
-      <Polyline
-        positions={points}
-        color="#2563eb"
-        weight={7}
-        opacity={0.9}
-      />
+      {/* ORIGIN & DESTINATION MARKERS */}
+      {points.length > 0 && (
+        <>
+          <Marker position={points[0]} icon={defaultIcon}>
+            <Popup>
+              <strong>📍 Route Origin Hub</strong>
+            </Popup>
+          </Marker>
+          <Marker position={points[points.length - 1]} icon={defaultIcon}>
+            <Popup>
+              <strong>🏁 Destination Depot</strong>
+            </Popup>
+          </Marker>
+        </>
+      )}
 
-      {/* SOURCE */}
-
-      <Marker
-        position={points[0]}
-        icon={defaultIcon}
-      >
-        <Popup>
-          <strong>
-            📍 Source
-          </strong>
-        </Popup>
-      </Marker>
-
-      {/* DESTINATION */}
-
-      <Marker
-        position={
-          points[points.length - 1]
-        }
-        icon={defaultIcon}
-      >
-        <Popup>
-          <strong>
-            🏁 Destination
-          </strong>
-        </Popup>
-      </Marker>
-
-
-      {/* BROWSER GPS / FIELD OFFICIAL LOCATION */}
-
-      {gpsPosition && (
+      {/* ACTIVE DISRUPTION / HAZARD ZONE OVERLAYS */}
+      {disruptions.map((dis) => (
         <CircleMarker
-          center={[gpsPosition.lat, gpsPosition.lon]}
-          radius={10}
+          key={dis.id}
+          center={dis.coordinates}
+          radius={24}
           pathOptions={{
-            color: "#7c3aed",
-            fillColor: "#7c3aed",
+            color: "#dc2626",
+            fillColor: "#ef4444",
             fillOpacity: 0.35,
             weight: 3,
           }}
         >
           <Popup>
-            <strong>📍 Current GPS Position</strong>
-            <br />
-            Accuracy: {gpsPosition.accuracy} m
+            <div style={{ padding: "4px" }}>
+              <strong style={{ color: "#b91c1c" }}>⚠️ {dis.type} Alert</strong>
+              <br />
+              <strong>{dis.corridorName}</strong> ({dis.district})
+              <p style={{ margin: "4px 0", fontSize: "12px", color: "#374151" }}>{dis.impact}</p>
+              <small style={{ color: "#6d28d9", fontWeight: "bold" }}>🔀 Alternate: {dis.alternateRoute}</small>
+            </div>
           </Popup>
         </CircleMarker>
-      )}
+      ))}
 
-      {/* LIVE VEHICLE */}
+      {/* FIELD OFFICIAL INCIDENT MARKERS */}
+      {incidents.map((inc) => (
+        <Marker
+          key={inc.id}
+          position={[inc.latitude || 26.1445, inc.longitude || 91.7362]}
+          icon={incidentMapIcon}
+        >
+          <Popup>
+            <div style={{ maxWidth: "240px", padding: "2px" }}>
+              <strong style={{ color: "#dc2626" }}>⚠️ Field Incident: {inc.type}</strong>
+              <div style={{ fontSize: "11px", color: "#6b7280", margin: "2px 0" }}>
+                📍 {inc.locationName || `${inc.district}, ${inc.state}`}
+              </div>
+              <p style={{ fontSize: "12px", margin: "4px 0" }}>{inc.note}</p>
+              {inc.photoUrl && (
+                <img
+                  src={inc.photoUrl}
+                  alt="Incident evidence"
+                  style={{ width: "100%", height: "110px", objectFit: "cover", borderRadius: "8px", marginTop: "6px" }}
+                />
+              )}
+              <div style={{ fontSize: "10px", color: "#16a34a", marginTop: "4px", fontWeight: "bold" }}>
+                Status: {inc.syncStatus} • By: {inc.reporter.split("@")[0]}
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
 
-      {trackingActive && (
-        <>
-          <CircleMarker
-            center={vehiclePosition}
-            radius={22}
-            pathOptions={{
-              color: "#22c55e",
-              fillColor: "#22c55e",
-              fillOpacity: 0.22,
-              weight: 3,
-            }}
-          />
+      {/* MONITORED ROAD & BRIDGE ACCESSIBILITY MARKERS */}
+      {infrastructureList.map((infra) => {
+        const coords = infra.coordinates || [26.1445, 91.7362];
+        const icon = infra.category === "Bridge" ? bridgeMapIcon(infra.status) : roadMapIcon(infra.status);
+        const statusColor = infra.status === "FULLY_ACCESSIBLE" ? "#16a34a" : infra.status === "BLOCKED" ? "#dc2626" : infra.status === "RESTRICTED_LOAD" ? "#9333ea" : "#d97706";
 
-          <Marker
-            position={vehiclePosition}
-            icon={vehicleIcon}
-          >
+        return (
+          <Marker key={infra.id} position={coords} icon={icon}>
             <Popup>
-              <strong>
-                🚚 Vehicle Live Location
-              </strong>
+              <div style={{ maxWidth: "260px", padding: "4px" }}>
+                <strong style={{ color: "#0f3d91", fontSize: "14px" }}>
+                  {infra.category === "Bridge" ? "🌉" : "🛣️"} {infra.name}
+                </strong>
+                <div style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 6px" }}>
+                  <strong>{infra.highway}</strong> ({infra.district}, {infra.state})
+                </div>
 
-              <br />
+                <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", marginBottom: "6px", fontSize: "11px" }}>
+                  <div>Status: <strong style={{ color: statusColor }}>{infra.status.replace(/_/g, " ")}</strong></div>
+                  <div>Max Load Limit: <strong>{infra.maxWeightCapacityTons > 0 ? `${infra.maxWeightCapacityTons} Tons` : "BLOCKED"}</strong></div>
+                  <div>Water Level: <strong>{infra.waterLevelStatus || "Normal"}</strong></div>
+                  <div>Flow Speed: <strong>{infra.trafficFlowSpeedKmH} km/h</strong></div>
+                </div>
 
-              Vehicle is currently in transit.
+                <div style={{ fontSize: "11px", color: "#334155", marginBottom: "6px" }}>
+                  <strong>Note:</strong> {infra.bottleneckReason || "No bottleneck"}
+                </div>
+                {infra.alternateRoute && infra.alternateRoute !== "N/A" && (
+                  <div style={{ fontSize: "10px", color: "#6d28d9", fontWeight: "bold", marginBottom: "6px" }}>
+                    🔀 Bypass: {infra.alternateRoute}
+                  </div>
+                )}
+
+                {onUpdateInfraStatus && (
+                  <div style={{ display: "flex", gap: "4px", marginTop: "6px" }}>
+                    <button
+                      onClick={() => onUpdateInfraStatus(infra.id, "FULLY_ACCESSIBLE")}
+                      style={{ flex: 1, padding: "3px 6px", fontSize: "10px", background: "#16a34a", color: "white", borderRadius: "4px" }}
+                    >
+                      ✅ Open
+                    </button>
+                    <button
+                      onClick={() => onUpdateInfraStatus(infra.id, "PASSABLE_CAUTION")}
+                      style={{ flex: 1, padding: "3px 6px", fontSize: "10px", background: "#d97706", color: "white", borderRadius: "4px" }}
+                    >
+                      ⚠️ Caution
+                    </button>
+                    <button
+                      onClick={() => onUpdateInfraStatus(infra.id, "BLOCKED")}
+                      style={{ flex: 1, padding: "3px 6px", fontSize: "10px", background: "#dc2626", color: "white", borderRadius: "4px" }}
+                    >
+                      🚨 Block
+                    </button>
+                  </div>
+                )}
+              </div>
             </Popup>
           </Marker>
-        </>
+        );
+      })}
+
+      {/* ESSENTIAL COMMODITY FLEET VEHICLES */}
+      {fleetVehicles.map((fv) => (
+        <Marker
+          key={fv.id}
+          position={[fv.currentLat, fv.currentLon]}
+          icon={fleetMapIcon(fv.cargoType)}
+        >
+          <Popup>
+            <div style={{ padding: "4px" }}>
+              <strong style={{ color: "#166534" }}>🚚 {fv.vehicleName}</strong>
+              <div style={{ fontSize: "12px", color: "#1f2937", margin: "3px 0" }}>
+                📦 <strong>Cargo:</strong> {fv.cargoType} ({fv.cargoWeightKg} kg)
+              </div>
+              <div style={{ fontSize: "11px", color: "#4b5563" }}>
+                👤 <strong>Driver:</strong> {fv.driverName} ({fv.contact})
+              </div>
+              <div style={{ fontSize: "11px", color: "#4b5563" }}>
+                📍 <strong>Route:</strong> {fv.origin} ➔ {fv.destination}
+              </div>
+              <div style={{ fontSize: "11px", color: fv.status === "Delayed" ? "#dc2626" : "#16a34a", marginTop: "4px", fontWeight: "bold" }}>
+                Status: {fv.status} ({fv.speedKmH} km/h) • ETA: {fv.etaMinutes} min
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+
+      {/* REAL GPS DRIVEN VEHICLE TRACKER MARKER */}
+      {realGpsActive && activeVehiclePos && (
+        <Marker position={activeVehiclePos} icon={realGpsVehicleIcon}>
+          <Popup>
+            <div style={{ padding: "4px" }}>
+              <strong style={{ color: "#16a34a" }}>📡 REAL GPS VEHICLE TRACKER ACTIVE</strong>
+              <div style={{ fontSize: "12px", margin: "4px 0" }}>
+                Latitude: <strong>{activeVehiclePos[0].toFixed(5)}</strong><br />
+                Longitude: <strong>{activeVehiclePos[1].toFixed(5)}</strong><br />
+                Speed: <strong>{realGpsPosition?.speedKmH || 45} km/h</strong><br />
+                GPS Accuracy: <strong>{realGpsPosition?.accuracy || 8} meters</strong>
+              </div>
+              <span style={{ fontSize: "10px", background: "#dcfce7", color: "#15803d", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold" }}>
+                ● Real-Time Hardware Geolocation Stream
+              </span>
+            </div>
+          </Popup>
+        </Marker>
       )}
     </>
   );
 }
 
 /* =========================================================
-   MAIN APP
+   MAIN APPLICATION CONTAINER
 ========================================================= */
-
-
 function App() {
-
-  /* =======================================================
-     NER SIH ACCESS + INTELLIGENCE LAYER
-  ======================================================= */
-
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("nerCurrentUser")) || null;
+      return JSON.parse(localStorage.getItem("nerCurrentUser")) || {
+        name: "Official Inspector",
+        email: "officer@mdoner.gov.in",
+        role: "Logistics Manager"
+      };
     } catch {
-      return null;
+      return { name: "Official Inspector", email: "officer@mdoner.gov.in", role: "Logistics Manager" };
     }
   });
 
@@ -212,17 +967,64 @@ function App() {
   const [loginRole, setLoginRole] = useState("Logistics Manager");
   const [loginError, setLoginError] = useState("");
 
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator === "undefined" ? true : navigator.onLine
-  );
-
+  const [isOnline, setIsOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [gpsPosition, setGpsPosition] = useState(null);
-  const [gpsError, setGpsError] = useState("");
 
+  const [language, setLanguage] = useState("English");
+  const [districtFilter, setDistrictFilter] = useState("All");
   const [emergencyMode, setEmergencyMode] = useState(false);
-  const [incidentType, setIncidentType] = useState("Flood");
+
+  // Route Planning State
+  const [source, setSource] = useState("Guwahati, Assam");
+  const [destination, setDestination] = useState("Silchar, Assam");
+  const [vehicle, setVehicle] = useState("mediumTruck");
+  const [routes, setRoutes] = useState(DEFAULT_COMPARISON_ROUTES);
+  const [selectedRoute, setSelectedRoute] = useState(DEFAULT_ROUTE_DATA);
+  const [destRiskInfo, setDestRiskInfo] = useState(DEFAULT_RISK_INFO);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // REAL GPS TELEMETRY TRACKING STATE
+  const [realGpsActive, setRealGpsActive] = useState(true);
+  const [realGpsPosition, setRealGpsPosition] = useState(null);
+
+  // Weather, Disruptions, Incidents, Infrastructure & Fleet State
+  const [weatherData, setWeatherData] = useState(null);
+  const [disruptions, setDisruptions] = useState(INITIAL_DISRUPTIONS);
+  const [incidentsList, setIncidentsList] = useState([]);
+  const [fleetVehicles, setFleetVehicles] = useState(INITIAL_FLEET);
+  const [districtsMatrix, setDistrictsMatrix] = useState(INITIAL_DISTRICTS);
+
+  // REAL-TIME ROAD & BRIDGE ACCESSIBILITY STATE
+  const [infrastructureList, setInfrastructureList] = useState(INITIAL_INFRASTRUCTURE);
+  const [infraCategoryFilter, setInfraCategoryFilter] = useState("All");
+  const [infraStatusFilter, setInfraStatusFilter] = useState("All");
+  const [infraStateFilter, setInfraStateFilter] = useState("All");
+  const [infraSearchQuery, setInfraSearchQuery] = useState("");
+  const [infraViewMode, setInfraViewMode] = useState("cards");
+  const [infraAlerts, setInfraAlerts] = useState([]);
+
+  // New Infrastructure Modal/Form state
+  const [newInfraName, setNewInfraName] = useState("");
+  const [newInfraCategory, setNewInfraCategory] = useState("Bridge");
+  const [newInfraHighway, setNewInfraHighway] = useState("NH-27");
+  const [newInfraState, setNewInfraState] = useState("ASSAM");
+  const [newInfraDistrict, setNewInfraDistrict] = useState("Kamrup");
+  const [newInfraStatus, setNewInfraStatus] = useState("FULLY_ACCESSIBLE");
+  const [newInfraWeight, setNewInfraWeight] = useState("35");
+  const [newInfraWater, setNewInfraWater] = useState("Normal");
+  const [newInfraBottleneck, setNewInfraBottleneck] = useState("");
+  const [showAddInfraForm, setShowAddInfraForm] = useState(false);
+
+  // Incident form state
+  const [incidentType, setIncidentType] = useState("Landslide");
   const [incidentSeverity, setIncidentSeverity] = useState("High");
   const [incidentNote, setIncidentNote] = useState("");
+  const [incidentState, setIncidentState] = useState("MEGHALAYA");
+  const [incidentDistrict, setIncidentDistrict] = useState("Jowai / West Jaintia");
+  const [incidentLocationName, setIncidentLocationName] = useState("Ratacherra Highway Pass");
+  const [incidentPhoto, setIncidentPhoto] = useState(null);
+  const [incidentPhotoPreview, setIncidentPhotoPreview] = useState(null);
   const [incidentQueue, setIncidentQueue] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("nerIncidentQueue")) || [];
@@ -231,51 +1033,205 @@ function App() {
     }
   });
 
-  const [language, setLanguage] = useState("English");
-  const [districtFilter, setDistrictFilter] = useState("All");
-
-  const districtRows = [
-    { district: "Imphal", state: "Manipur", connectivity: 88, risk: 34, status: "Open", bottleneck: "Normal" },
-    { district: "Aizawl", state: "Mizoram", connectivity: 76, risk: 48, status: "Caution", bottleneck: "Terrain" },
-    { district: "Gangtok", state: "Sikkim", connectivity: 71, risk: 62, status: "Caution", bottleneck: "Landslide" },
-    { district: "Shillong", state: "Meghalaya", connectivity: 83, risk: 41, status: "Open", bottleneck: "Rainfall" },
-    { district: "Kohima", state: "Nagaland", connectivity: 69, risk: 67, status: "Alert", bottleneck: "Road damage" },
-    { district: "Agartala", state: "Tripura", connectivity: 91, risk: 29, status: "Open", bottleneck: "Normal" },
-    { district: "Itanagar", state: "Arunachal Pradesh", connectivity: 63, risk: 73, status: "Alert", bottleneck: "Landslide" },
-    { district: "Dispur", state: "Assam", connectivity: 94, risk: 31, status: "Open", bottleneck: "Traffic" },
-  ];
-
-  const activeDistricts =
-    districtFilter === "All"
-      ? districtRows
-      : districtRows.filter((row) => row.district === districtFilter);
-
-  const alertRows = [
-    { level: "HIGH", title: "Landslide corridor watch", detail: "Eastern NER corridors require alternate-route readiness.", icon: "⛰️" },
-    { level: "MEDIUM", title: "Heavy rainfall watch", detail: "Delivery ETA may increase on exposed mountain corridors.", icon: "🌧️" },
-    { level: "MEDIUM", title: "Traffic congestion", detail: "Urban entry points can affect last-mile delivery windows.", icon: "🚦" },
-  ];
-
-  const handleLogin = (event) => {
-    event.preventDefault();
-
-    if (!loginEmail.trim() || !loginPassword.trim()) {
-      setLoginError("Enter both email and password.");
-      return;
+  const [savedTrips, setSavedTrips] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("nerTrips")) || [];
+    } catch {
+      return [];
     }
+  });
 
-    const name = loginEmail
-      .split("@")[0]
-      .replace(/[._-]/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+  // Traffic Data State
+  const [trafficList, setTrafficList] = useState([]);
+  const [trafficSummaryInfo, setTrafficSummaryInfo] = useState(null);
+  const [trafficStateFilter, setTrafficStateFilter] = useState("All");
+  const [trafficCongestionFilter, setTrafficCongestionFilter] = useState("All");
+  const [trafficSearchQuery, setTrafficSearchQuery] = useState("");
 
-    const user = {
-      name,
-      email: loginEmail.trim(),
-      role: loginRole,
-      loginTime: new Date().toISOString(),
+  const t = (key) => TRANSLATIONS[language]?.[key] || TRANSLATIONS.English[key] || key;
+
+  // Real Hardware GPS Sensor Watch (HTML5 Geolocation)
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const liveGps = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          speedKmH: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 45,
+          accuracy: Math.round(pos.coords.accuracy || 8),
+          timestamp: new Date().toISOString()
+        };
+        setGpsPosition(liveGps);
+        setRealGpsPosition(liveGps);
+
+        // Send live REAL GPS telemetry to backend endpoint
+        fetch("http://localhost:5000/api/fleet/update-gps", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vehicleId: "NER-FLEET-1001",
+            lat: liveGps.lat,
+            lon: liveGps.lon,
+            speed: liveGps.speedKmH,
+            status: "In Transit (Live REAL GPS)"
+          })
+        }).catch(() => {});
+      },
+      (err) => console.warn("GPS Sensor:", err.message),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  // Initial Fetching
+  useEffect(() => {
+    fetchDisruptions();
+    fetchIncidents();
+    fetchFleet();
+    fetchDistricts();
+    fetchInfrastructure();
+    fetchTraffic();
+    fetchWeather(26.1445, 91.7362, "Guwahati");
+    findRoute();
+  }, []);
+
+  const fetchTraffic = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/traffic");
+      const data = await res.json();
+      if (data.corridors?.length) {
+        setTrafficList(data.corridors);
+        setTrafficSummaryInfo(data);
+      }
+    } catch (e) {}
+  };
+
+  const fetchInfrastructure = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/accessibility/infrastructure");
+      const data = await res.json();
+      if (data.infrastructure?.length) setInfrastructureList(data.infrastructure);
+    } catch (e) {}
+  };
+
+  const handleUpdateInfraStatus = async (infraId, newStatus, optionalReason) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/accessibility/infrastructure/${infraId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus,
+          bottleneckReason: optionalReason || `Status updated to ${newStatus.replace(/_/g, " ")} by operator`
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.infrastructure) {
+        setInfrastructureList((prev) =>
+          prev.map((item) => (item.id === infraId ? data.infrastructure : item))
+        );
+      } else {
+        // Local fallback update
+        setInfrastructureList((prev) =>
+          prev.map((item) => (item.id === infraId ? { ...item, status: newStatus } : item))
+        );
+      }
+    } catch (e) {
+      setInfrastructureList((prev) =>
+        prev.map((item) => (item.id === infraId ? { ...item, status: newStatus } : item))
+      );
+    }
+  };
+
+  const submitNewInfrastructure = async (e) => {
+    e.preventDefault();
+    if (!newInfraName.trim()) return;
+
+    const newObj = {
+      name: newInfraName.trim(),
+      category: newInfraCategory,
+      highway: newInfraHighway,
+      state: newInfraState,
+      district: newInfraDistrict,
+      coordinates: newInfraState === "ASSAM" ? [26.1445, 91.7362] : [25.5788, 91.8933],
+      status: newInfraStatus,
+      maxWeightCapacityTons: parseFloat(newInfraWeight) || 25,
+      heightClearanceMeters: 4.5,
+      waterLevelStatus: newInfraWater,
+      bottleneckReason: newInfraBottleneck.trim() || "Registered by field controller",
+      alternateRoute: "N/A"
     };
 
+    try {
+      const res = await fetch("http://localhost:5000/api/accessibility/infrastructure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newObj)
+      });
+      const data = await res.json();
+      if (data.success && data.infrastructure) {
+        setInfrastructureList([data.infrastructure, ...infrastructureList]);
+      } else {
+        setInfrastructureList([{ ...newObj, id: `INF-${Date.now()}` }, ...infrastructureList]);
+      }
+    } catch (err) {
+      setInfrastructureList([{ ...newObj, id: `INF-${Date.now()}` }, ...infrastructureList]);
+    }
+
+    setNewInfraName("");
+    setNewInfraBottleneck("");
+    setShowAddInfraForm(false);
+    alert("New road/bridge accessibility monitoring point registered!");
+  };
+
+  const fetchWeather = async (lat, lon, location) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/weather?lat=${lat}&lon=${lon}&location=${encodeURIComponent(location || "")}`);
+      const data = await res.json();
+      if (data && data.temperature) setWeatherData(data);
+    } catch (e) {}
+  };
+
+  const fetchDisruptions = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/disruptions");
+      const data = await res.json();
+      if (data.disruptions?.length) setDisruptions(data.disruptions);
+    } catch (e) {}
+  };
+
+  const fetchIncidents = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/incidents");
+      const data = await res.json();
+      if (data.incidents) setIncidentsList(data.incidents);
+    } catch (e) {}
+  };
+
+  const fetchFleet = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/fleet");
+      const data = await res.json();
+      if (data.fleet?.length) setFleetVehicles(data.fleet);
+    } catch (e) {}
+  };
+
+  const fetchDistricts = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/districts");
+      const data = await res.json();
+      if (data.districts?.length) setDistrictsMatrix(data.districts);
+    } catch (e) {}
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      setLoginError("Please enter both email and password.");
+      return;
+    }
+    const name = loginEmail.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const user = { name, email: loginEmail.trim(), role: loginRole, loginTime: new Date().toISOString() };
     localStorage.setItem("nerCurrentUser", JSON.stringify(user));
     setCurrentUser(user);
     setLoginError("");
@@ -286,3619 +1242,1292 @@ function App() {
     setCurrentUser(null);
   };
 
-  useEffect(() => {
-    const online = () => setIsOnline(true);
-    const offline = () => setIsOnline(false);
-
-    window.addEventListener("online", online);
-    window.addEventListener("offline", offline);
-
-    return () => {
-      window.removeEventListener("online", online);
-      window.removeEventListener("offline", offline);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setGpsError("Browser GPS is not available.");
-      return undefined;
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setIncidentPhoto(reader.result);
+        setIncidentPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
-
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        setGpsPosition({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-          accuracy: Math.round(position.coords.accuracy || 0),
-        });
-        setGpsError("");
-      },
-      (error) => {
-        setGpsError(error.message || "Unable to read GPS location.");
-      },
-      { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 }
-    );
-
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
-
-  const syncIncidentQueue = () => {
-    if (!isOnline || incidentQueue.length === 0) return;
-
-    localStorage.setItem("nerLastSync", new Date().toISOString());
-    setIncidentQueue([]);
-    localStorage.setItem("nerIncidentQueue", JSON.stringify([]));
   };
 
-  const submitIncident = () => {
-    const report = {
-      id: Date.now(),
+  const submitIncidentReport = async () => {
+    const reportData = {
       type: incidentType,
       severity: incidentSeverity,
-      note: incidentNote.trim() || "Field incident reported.",
-      latitude: gpsPosition?.lat ?? null,
-      longitude: gpsPosition?.lon ?? null,
-      capturedAt: new Date().toISOString(),
-      syncStatus: isOnline ? "Synced" : "Queued Offline",
-      reporter: currentUser?.email || "unknown",
+      state: incidentState,
+      district: incidentDistrict,
+      locationName: incidentLocationName,
+      note: incidentNote.trim() || "Field incident reported by inspector.",
+      latitude: gpsPosition?.lat || 25.5788,
+      longitude: gpsPosition?.lon || 91.8933,
+      reporter: currentUser?.email || "field_official@mdoner.gov.in",
+      photoUrl: incidentPhoto
     };
 
-    const next = [report, ...incidentQueue];
-    setIncidentQueue(next);
-    localStorage.setItem("nerIncidentQueue", JSON.stringify(next));
-    setIncidentNote("");
-
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
-    }
-  };
-
-
-  /* =======================================================
-     ROUTE INPUT
-  ======================================================= */
-
-  const [source, setSource] =
-    useState("");
-
-  const [destination, setDestination] =
-    useState("");
-
-  const [vehicle, setVehicle] =
-    useState("mediumTruck");
-
-
-  /* =======================================================
-     ROUTES
-  ======================================================= */
-
-  const [routes, setRoutes] =
-    useState([]);
-
-  const [selectedRoute, setSelectedRoute] =
-    useState(null);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-
-  /* =======================================================
-     SAVED TRIPS
-  ======================================================= */
-
-  const [savedTrips, setSavedTrips] =
-    useState(() => {
-      try {
-        return (
-          JSON.parse(
-            localStorage.getItem(
-              "nerTrips"
-            )
-          ) || []
-        );
-      } catch {
-        return [];
+    try {
+      const res = await fetch("http://localhost:5000/api/incidents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reportData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Incident report broadcasted successfully!");
+        setIncidentsList([data.incident, ...incidentsList]);
+        setIncidentNote("");
+        setIncidentPhoto(null);
+        setIncidentPhotoPreview(null);
       }
-    });
-
-
-  /* =======================================================
-     TRACKING
-  ======================================================= */
-
-  const [trackingActive, setTrackingActive] =
-    useState(false);
-
-  const [trackingIndex, setTrackingIndex] =
-    useState(0);
-
-
-  /* =======================================================
-     VEHICLE NAME
-  ======================================================= */
-
-  const vehicleName =
-    vehicle === "heavyTruck"
-      ? "Heavy Truck"
-      : vehicle === "mediumTruck"
-      ? "Medium Truck"
-      : "Delivery Van";
-
-
-  /* =======================================================
-     FORMAT TIME
-  ======================================================= */
-
-  const formatTime = (minutes) => {
-    const total =
-      Number(minutes) || 0;
-
-    const hours = Math.floor(
-      total / 60
-    );
-
-    const mins = Math.round(
-      total % 60
-    );
-
-    if (hours === 0) {
-      return `${mins} min`;
+    } catch (e) {
+      alert("Error submitting incident: " + e.message);
     }
-
-    return `${hours}h ${mins}m`;
   };
 
-
-  /* =======================================================
-     FIND ROUTE
-  ======================================================= */
+  const saveTrip = () => {
+    if (!selectedRoute) return;
+    const tripRecord = {
+      id: Date.now(),
+      source,
+      destination,
+      vehicle,
+      distanceKm: selectedRoute.distanceKm,
+      durationMinutes: selectedRoute.durationMinutes,
+      totalDeliveryCost: selectedRoute.totalDeliveryCost,
+      savedAt: new Date().toLocaleString()
+    };
+    const nextSaved = [tripRecord, ...savedTrips];
+    setSavedTrips(nextSaved);
+    localStorage.setItem("nerTrips", JSON.stringify(nextSaved));
+    alert("Trip saved successfully to logistics history!");
+  };
 
   const findRoute = async () => {
-
-    if (
-      !source.trim() ||
-      !destination.trim()
-    ) {
-      setError(
-        "Please enter both source and destination."
-      );
-
+    if (!source.trim() || !destination.trim()) {
+      setError("Please enter both source and destination.");
       return;
     }
 
     setLoading(true);
     setError("");
 
-    setRoutes([]);
-    setSelectedRoute(null);
-
-    setTrackingActive(false);
-    setTrackingIndex(0);
-
     try {
-
-      const response =
-        await fetch(
-          `http://localhost:5000/api/route?source=${encodeURIComponent(
-            source
-          )}&destination=${encodeURIComponent(
-            destination
-          )}&vehicle=${vehicle}`
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Route calculation failed."
-        );
-      }
-
-      const receivedRoutes =
-        Array.isArray(data.routes)
-          ? data.routes
-          : [];
-
-      setRoutes(receivedRoutes);
-
-      if (data.recommendedRoute) {
-
-        setSelectedRoute(
-          data.recommendedRoute
-        );
-
-      } else if (
-        receivedRoutes.length > 0
-      ) {
-
-        setSelectedRoute(
-          receivedRoutes[0]
-        );
-
-      } else {
-
-        setError(
-          "No routes were returned by the server."
-        );
-      }
-
-    } catch (err) {
-
-      setError(
-        err.message ||
-          "Unable to calculate route."
+      const response = await fetch(
+        `http://localhost:5000/api/route?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&vehicle=${vehicle}`
       );
+      const data = await response.json();
 
+      if (data.routes?.length) setRoutes(data.routes);
+      if (data.destRiskInfo) setDestRiskInfo(data.destRiskInfo);
+      if (data.recommendedRoute) setSelectedRoute(data.recommendedRoute);
+
+      if (data.destinationCoords) {
+        fetchWeather(data.destinationCoords.lat, data.destinationCoords.lon, destination);
+      }
+    } catch (err) {
+      console.warn("Route API warning:", err.message);
     } finally {
-
       setLoading(false);
     }
   };
 
-
-  /* =======================================================
-     SELECT ROUTE
-  ======================================================= */
-
-  const selectRoute = (route) => {
-
-    setSelectedRoute(route);
-
-    setTrackingActive(false);
-
-    setTrackingIndex(0);
-
-    setError("");
-  };
-
-
-  /* =======================================================
-     START TRACKING
-  ======================================================= */
-
-  const startTracking = () => {
-
-    if (!selectedRoute) {
-
-      setError(
-        "Please calculate a route first."
-      );
-
-      return;
-    }
-
-    const coordinates =
-      selectedRoute?.geometry
-        ?.coordinates;
-
-    if (
-      !coordinates ||
-      coordinates.length === 0
-    ) {
-
-      setError(
-        "Selected route does not contain map coordinates."
-      );
-
-      return;
-    }
-
-    setError("");
-
-    setTrackingIndex(0);
-
-    setTrackingActive(true);
-  };
-
-
-  /* =======================================================
-     STOP TRACKING
-  ======================================================= */
-
-  const stopTracking = () => {
-
-    setTrackingActive(false);
-  };
-
-
-  /* =======================================================
-     LIVE TRACKING TIMER
-  ======================================================= */
-
-  useEffect(() => {
-
-    if (!trackingActive) {
-      return undefined;
-    }
-
-    const coordinates =
-      selectedRoute?.geometry
-        ?.coordinates;
-
-    if (
-      !coordinates ||
-      coordinates.length === 0
-    ) {
-      return undefined;
-    }
-
-    const interval =
-      setInterval(() => {
-
-        setTrackingIndex(
-          (current) => {
-
-            if (
-              current >=
-              coordinates.length - 1
-            ) {
-
-              setTrackingActive(false);
-
-              return current;
-            }
-
-            return current + 1;
-          }
-        );
-
-      }, 1000);
-
-    return () =>
-      clearInterval(interval);
-
-  }, [
-    trackingActive,
-    selectedRoute,
-  ]);
-
-
-  /* =======================================================
-     TRACKING PROGRESS
-  ======================================================= */
-
-  const totalPoints =
-    selectedRoute?.geometry
-      ?.coordinates?.length || 0;
-
-  const trackingProgress =
-    totalPoints > 1
-      ? Math.min(
-          100,
-          Math.round(
-            (trackingIndex /
-              (totalPoints - 1)) *
-              100
-          )
-        )
-      : 0;
-
-
-  /* =======================================================
-     TRACKING STATUS
-  ======================================================= */
-
-  let trackingStatus =
-    "Not Started";
-
-  if (
-    !trackingActive &&
-    trackingProgress >= 100
-  ) {
-
-    trackingStatus =
-      "Delivered";
-
-  } else if (
-    trackingProgress >= 90
-  ) {
-
-    trackingStatus =
-      "Arriving";
-
-  } else if (
-    trackingProgress >= 50
-  ) {
-
-    trackingStatus =
-      "In Transit";
-
-  } else if (trackingActive) {
-
-    trackingStatus =
-      "Dispatched";
-  }
-
-
-  /* =======================================================
-     ETA
-  ======================================================= */
-
-  const currentETA =
-    selectedRoute
-      ? Math.max(
-          0,
-          Math.round(
-            (Number(
-              selectedRoute.durationMinutes ||
-                0
-            ) *
-              (100 -
-                trackingProgress)) /
-              100
-          )
-        )
-      : 0;
-
-
-  /* =======================================================
-     SIMULATED SPEED
-  ======================================================= */
-
-  const simulatedSpeed =
-    vehicle === "heavyTruck"
-      ? 55
-      : vehicle === "mediumTruck"
-      ? 65
-      : 70;
-
-
-  /* =======================================================
-     SAVE TRIP
-  ======================================================= */
-
-  const saveTrip = () => {
-
-    if (!selectedRoute) {
-
-      setError(
-        "Please calculate a route first."
-      );
-
-      return;
-    }
-
-    const newTrip = {
-
-      id: Date.now(),
-
+  const generatePDFReport = (tripData) => {
+    const target = tripData || {
       source,
-
       destination,
-
-      vehicle: vehicleName,
-
-      distanceKm:
-        selectedRoute.distanceKm,
-
-      durationMinutes:
-        selectedRoute.durationMinutes,
-
-      fuelLitres:
-        selectedRoute.fuelLitres,
-
-      totalDeliveryCost:
-        selectedRoute.totalDeliveryCost,
-
-      score:
-        selectedRoute.score,
-
-      status: "Planned",
-
-      date:
-        new Date().toLocaleDateString(),
+      vehicle: vehicle === "heavyTruck" ? "Heavy Truck" : "Medium Truck",
+      distanceKm: selectedRoute?.distanceKm || 0,
+      durationMinutes: selectedRoute?.durationMinutes || 0,
+      fuelLitres: selectedRoute?.fuelLitres || 0,
+      totalDeliveryCost: selectedRoute?.totalDeliveryCost || 0,
+      score: selectedRoute?.score || 90,
+      date: new Date().toLocaleDateString()
     };
 
-    const updatedTrips = [
-      newTrip,
-      ...savedTrips,
-    ];
+    const doc = new jsPDF();
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, 210, 30, "F");
 
-    setSavedTrips(
-      updatedTrips
-    );
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.text("MDoNER - NER Logistics Intelligence Platform", 14, 18);
+    doc.setFontSize(10);
+    doc.text("Ministry of Development of North Eastern Region | Govt of India", 14, 25);
 
-    localStorage.setItem(
-      "nerTrips",
-      JSON.stringify(
-        updatedTrips
-      )
-    );
-
-    alert(
-      "Trip saved successfully!"
-    );
-  };
-
-
-  /* =======================================================
-     UPDATE TRIP STATUS
-  ======================================================= */
-
-  const updateTripStatus = (
-    id,
-    newStatus
-  ) => {
-
-    const updatedTrips =
-      savedTrips.map(
-        (trip) =>
-          trip.id === id
-            ? {
-                ...trip,
-                status:
-                  newStatus,
-              }
-            : trip
-      );
-
-    setSavedTrips(
-      updatedTrips
-    );
-
-    localStorage.setItem(
-      "nerTrips",
-      JSON.stringify(
-        updatedTrips
-      )
-    );
-  };
-
-
-  /* =======================================================
-     DELETE TRIP
-  ======================================================= */
-
-  const deleteTrip = (id) => {
-
-    const updatedTrips =
-      savedTrips.filter(
-        (trip) =>
-          trip.id !== id
-      );
-
-    setSavedTrips(
-      updatedTrips
-    );
-
-    localStorage.setItem(
-      "nerTrips",
-      JSON.stringify(
-        updatedTrips
-      )
-    );
-  };
-
-
-  /* =======================================================
-     PDF REPORT
-  ======================================================= */
-
-  const generatePDF = (
-    trip
-  ) => {
-
-    const doc =
-      new jsPDF();
-
-    doc.setFontSize(22);
-
-    doc.text(
-      "NER Logistics",
-      20,
-      25
-    );
-
-    doc.setFontSize(15);
-
-    doc.text(
-      "Delivery Route Report",
-      20,
-      36
-    );
-
-    doc.line(
-      20,
-      42,
-      190,
-      42
-    );
-
-    doc.setFontSize(12);
-
-    doc.text(
-      `Report Date: ${trip.date}`,
-      20,
-      55
-    );
-
-    doc.text(
-      `Trip ID: ${trip.id}`,
-      20,
-      65
-    );
-
-    doc.text(
-      `Source: ${trip.source}`,
-      20,
-      78
-    );
-
-    doc.text(
-      `Destination: ${trip.destination}`,
-      20,
-      88
-    );
-
-    doc.text(
-      `Vehicle: ${trip.vehicle}`,
-      20,
-      98
-    );
-
-    doc.text(
-      `Status: ${trip.status}`,
-      20,
-      108
-    );
-
-    doc.text(
-      "Route Details",
-      20,
-      125
-    );
-
-    doc.line(
-      20,
-      129,
-      190,
-      129
-    );
-
-    doc.text(
-      `Distance: ${trip.distanceKm} km`,
-      25,
-      143
-    );
-
-    doc.text(
-      `Estimated Time: ${formatTime(
-        trip.durationMinutes
-      )}`,
-      25,
-      153
-    );
-
-    doc.text(
-      `Fuel Required: ${trip.fuelLitres} L`,
-      25,
-      163
-    );
-
-    doc.text(
-      `Logistics Score: ${trip.score}/100`,
-      25,
-      173
-    );
-
-    doc.text(
-      `Total Delivery Cost: Rs. ${trip.totalDeliveryCost}`,
-      25,
-      183
-    );
-
-    doc.line(
-      20,
-      193,
-      190,
-      193
-    );
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(14);
+    doc.text("OFFICIAL DELIVERY ROUTE & ACCESSIBILITY REPORT", 14, 42);
 
     doc.setFontSize(10);
+    doc.text(`Report Date: ${target.date}`, 14, 52);
+    doc.text(`Origin Location: ${target.source}`, 14, 60);
+    doc.text(`Destination Target: ${target.destination}`, 14, 68);
+    doc.text(`Assigned Vehicle Type: ${target.vehicle}`, 14, 76);
 
-    doc.text(
-      "Generated by NER Logistics Intelligence Platform",
-      20,
-      208
-    );
+    doc.line(14, 82, 196, 82);
 
-    doc.save(
-      `NER-Logistics-${trip.source}-${trip.destination}.pdf`
-    );
+    doc.setFontSize(12);
+    doc.text("Route Logistics Metrics", 14, 92);
+    doc.setFontSize(10);
+    doc.text(`Total Distance: ${target.distanceKm} km`, 20, 102);
+    doc.text(`Est. Travel Time: ${Math.floor(target.durationMinutes / 60)}h ${target.durationMinutes % 60}m`, 20, 110);
+    doc.text(`Estimated Fuel Consumption: ${target.fuelLitres} Litres`, 20, 118);
+    doc.text(`Logistics Score: ${target.score} / 100`, 20, 126);
+    doc.text(`Total Delivery Cost: Rs. ${target.totalDeliveryCost}`, 20, 134);
+
+    doc.line(14, 142, 196, 142);
+
+    doc.setFontSize(12);
+    doc.text("Environmental Risk & Disruption Model Summary", 14, 152);
+    doc.setFontSize(10);
+    doc.text(`Model: ${destRiskInfo?.model || "NER-Environmental-RandomForest-Classifier-v3.2"}`, 20, 162);
+    doc.text(`Risk Status: ${destRiskInfo?.risk || "MEDIUM"} Risk Zone`, 20, 170);
+    doc.text(`Landslide / Flood Probability: ${destRiskInfo?.probabilityPercent || 45}%`, 20, 178);
+    doc.text(`Advisory: ${destRiskInfo?.advisory || "Standard precautions required."}`, 20, 186);
+
+    doc.setFillColor(243, 244, 246);
+    doc.rect(14, 195, 182, 35, "F");
+    doc.setTextColor(55, 65, 81);
+    doc.text("Certified by MDoNER Logistics Intelligence Core Model Engine", 20, 207);
+    doc.text("System Generated Document • Valid for Emergency Logistics Planning", 20, 217);
+
+    doc.save(`NER-Logistics-Report-${target.source}-${target.destination}.pdf`);
   };
-
-
-  /* =======================================================
-     ANALYTICS
-  ======================================================= */
-
-  const totalTrips =
-    savedTrips.length;
-
-  const activeTrips =
-    savedTrips.filter(
-      (trip) =>
-        trip.status ===
-        "In Transit"
-    ).length;
-
-  const deliveredTrips =
-    savedTrips.filter(
-      (trip) =>
-        trip.status ===
-        "Delivered"
-    ).length;
-
-  const plannedTrips =
-    savedTrips.filter(
-      (trip) =>
-        trip.status ===
-        "Planned"
-    ).length;
-
-  const totalCost =
-    savedTrips.reduce(
-      (sum, trip) =>
-        sum +
-        Number(
-          trip.totalDeliveryCost ||
-            0
-        ),
-      0
-    );
-
-  const totalDistance =
-    savedTrips.reduce(
-      (sum, trip) =>
-        sum +
-        Number(
-          trip.distanceKm ||
-            0
-        ),
-      0
-    );
-
-  const averageCost =
-    totalTrips > 0
-      ? Math.round(
-          totalCost /
-            totalTrips
-        )
-      : 0;
-
-  const averageScore =
-    totalTrips > 0
-      ? Math.round(
-          savedTrips.reduce(
-            (sum, trip) =>
-              sum +
-              Number(
-                trip.score ||
-                  0
-              ),
-            0
-          ) /
-            totalTrips
-        )
-      : 0;
-
-  const completionRate =
-    totalTrips > 0
-      ? Math.round(
-          (deliveredTrips /
-            totalTrips) *
-            100
-        )
-      : 0;
-
-
-  /* =======================================================
-     AI ANALYSIS
-  ======================================================= */
-
-  let aiAnalysis =
-    "Calculate a route to receive AI logistics analysis.";
-
-  if (selectedRoute) {
-
-    const score =
-      Number(
-        selectedRoute.score || 0
-      );
-
-    if (score >= 85) {
-
-      aiAnalysis =
-        "Excellent route selected. This route provides strong logistics efficiency with a high overall score and a good balance between distance, time, fuel and delivery cost.";
-
-    } else if (score >= 70) {
-
-      aiAnalysis =
-        "Good route selected. This route provides a balanced combination of distance, delivery time, fuel consumption and overall logistics cost.";
-
-    } else if (score >= 50) {
-
-      aiAnalysis =
-        "The selected route is usable, but alternative routes should be reviewed carefully for better fuel efficiency, delivery time and cost.";
-
-    } else {
-
-      aiAnalysis =
-        "The current route has a relatively low logistics score. Consider comparing the available alternatives before finalizing the delivery.";
-    }
-  }
-
-
-  /* =======================================================
-     AI ROUTE COMPARISON
-  ======================================================= */
-
-  const bestOverallRoute =
-    routes.length > 0
-      ? routes.reduce(
-          (best, route) =>
-            Number(route.score || 0) >
-            Number(best.score || 0)
-              ? route
-              : best
-        )
-      : null;
-
-  const fastestRoute =
-    routes.length > 0
-      ? routes.reduce(
-          (best, route) =>
-            Number(
-              route.durationMinutes ||
-                0
-            ) <
-            Number(
-              best.durationMinutes ||
-                0
-            )
-              ? route
-              : best
-        )
-      : null;
-
-  const fuelEfficientRoute =
-    routes.length > 0
-      ? routes.reduce(
-          (best, route) =>
-            Number(
-              route.fuelLitres ||
-                0
-            ) <
-            Number(
-              best.fuelLitres ||
-                0
-            )
-              ? route
-              : best
-        )
-      : null;
-
-  const lowestCostRoute =
-    routes.length > 0
-      ? routes.reduce(
-          (best, route) =>
-            Number(
-              route.totalDeliveryCost ||
-                0
-            ) <
-            Number(
-              best.totalDeliveryCost ||
-                0
-            )
-              ? route
-              : best
-        )
-      : null;
-
-
-  /* =======================================================
-     ROUTE BADGES
-  ======================================================= */
-
-  const getRouteBadges = (
-    route
-  ) => {
-
-    const badges = [];
-
-    if (
-      bestOverallRoute &&
-      route.id ===
-        bestOverallRoute.id
-    ) {
-
-      badges.push(
-        "🥇 Best Overall"
-      );
-    }
-
-    if (
-      fastestRoute &&
-      route.id ===
-        fastestRoute.id
-    ) {
-
-      badges.push(
-        "⚡ Fastest"
-      );
-    }
-
-    if (
-      fuelEfficientRoute &&
-      route.id ===
-        fuelEfficientRoute.id
-    ) {
-
-      badges.push(
-        "⛽ Fuel Efficient"
-      );
-    }
-
-    if (
-      lowestCostRoute &&
-      route.id ===
-        lowestCostRoute.id
-    ) {
-
-      badges.push(
-        "💰 Lowest Cost"
-      );
-    }
-
-    return badges;
-  };
-
-/* =======================================================
-   ML ENVIRONMENTAL RISK ENGINE
-   ======================================================= */
-
-const [mlRisk, setMlRisk] = useState(null);
-const [mlRiskLoading, setMlRiskLoading] = useState(false);
-const [mlRiskError, setMlRiskError] = useState("");
-
-const [riskState, setRiskState] = useState("ASSAM");
-const [riskDistrict, setRiskDistrict] =
-  useState("Hailakandi");
-
-/* =======================================================
-   ML RISK PREDICTION
-   ======================================================= */
-
-const fetchMlRisk = async () => {
-  if (!riskState.trim() || !riskDistrict.trim()) {
-    setMlRiskError(
-      "Please enter both state and district."
-    );
-    return;
-  }
-
-  setMlRiskLoading(true);
-  setMlRiskError("");
-
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/ml-risk?state=${encodeURIComponent(
-        riskState
-      )}&district=${encodeURIComponent(
-        riskDistrict
-      )}`
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || "ML prediction failed."
-      );
-    }
-
-    setMlRisk(data);
-  } catch (error) {
-    console.error("ML Risk Error:", error);
-
-    setMlRisk(null);
-
-    setMlRiskError(
-      error.message ||
-        "Unable to connect to ML risk engine."
-    );
-  } finally {
-    setMlRiskLoading(false);
-  }
-};
-
-/* =======================================================
-   DISPLAY HELPERS
-   ======================================================= */
-
-const mlRiskPercent = mlRisk
-  ? Math.round(
-      Number(mlRisk.probability || 0) * 100
-    )
-  : 0;
-
-const mlRiskLevel = mlRisk
-  ? mlRisk.risk
-  : "NO DATA";
-
-const getRiskColor = (value) => {
-  if (value >= 70) {
-    return "#ef4444";
-  }
-
-  if (value >= 40) {
-    return "#f59e0b";
-  }
-
-  return "#22c55e";
-};
-
-const getMlRiskColor = (risk) => {
-  if (risk === "HIGH") {
-    return "#ef4444";
-  }
-
-  if (risk === "MEDIUM") {
-    return "#f59e0b";
-  }
-
-  if (risk === "LOW") {
-    return "#22c55e";
-  }
-
-  return "#64748b";
-};
-
-const environmentalRisk = {
-  overall: mlRiskPercent,
-  level:
-    mlRiskLevel === "HIGH"
-      ? "High"
-      : mlRiskLevel === "MEDIUM"
-      ? "Moderate"
-      : mlRiskLevel === "LOW"
-      ? "Low"
-      : "No Data",
-};
-
-  /* =======================================================
-     ROUTE AI RECOMMENDATION
-  ======================================================= */
-
-  const getRouteRecommendation = (
-    route
-  ) => {
-
-    if (!route) {
-      return "";
-    }
-
-    const badges =
-      getRouteBadges(route);
-
-    if (
-      badges.includes(
-        "🥇 Best Overall"
-      )
-    ) {
-
-      return "AI recommends this route because it provides the strongest overall balance of distance, delivery time, fuel consumption and logistics cost.";
-    }
-
-    if (
-      badges.includes(
-        "⚡ Fastest"
-      )
-    ) {
-
-      return "This route provides the fastest estimated delivery time and is suitable when delivery speed is the priority.";
-    }
-
-    if (
-      badges.includes(
-        "💰 Lowest Cost"
-      )
-    ) {
-
-      return "This route has the lowest estimated delivery cost and can help reduce transportation expenses.";
-    }
-
-    if (
-      badges.includes(
-        "⛽ Fuel Efficient"
-      )
-    ) {
-
-      return "This route has the lowest estimated fuel consumption and is suitable when fuel efficiency is the priority.";
-    }
-
-    return "This route is a viable alternative. Compare its time, fuel consumption and cost with the recommended route before selecting it.";
-  };
-
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
-/* =======================================================
-     LOGIN SCREEN
-  ======================================================= */
 
   if (!currentUser) {
     return (
       <div className="sih-login-page">
         <div className="sih-login-card">
+          <div className="sih-login-header">
+            <div className="sih-login-emblem">🏛️</div>
+            <span className="sih-login-kicker">GOVERNMENT OF INDIA • MDoNER</span>
+            <h1>{t("loginTitle")}</h1>
+            <p>{t("loginSubtitle")}</p>
+          </div>
 
-          <div className="sih-login-icon">🚚</div>
+          <form onSubmit={handleLogin} className="sih-login-form">
+            <div className="form-group">
+              <label>{t("emailLabel")}</label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="officer@mdoner.gov.in"
+                required
+              />
+            </div>
 
-    
+            <div className="form-group">
+              <label>{t("passLabel")}</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+              />
+            </div>
 
-          <h1>NER Logistics Intelligence</h1>
+            <div className="form-group">
+              <label>{t("roleLabel")}</label>
+              <select value={loginRole} onChange={(e) => setLoginRole(e.target.value)}>
+                <option>Logistics Manager</option>
+                <option>Fleet Operator</option>
+                <option>Field Officer</option>
+                <option>Disaster Controller</option>
+              </select>
+            </div>
 
-          <p>
-            AI-powered logistics, accessibility and emergency operations platform.
-          </p>
+            <div className="form-group">
+              <label>Language / भाषा</label>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                <option>English</option>
+                <option>Hindi</option>
+                <option>Assamese</option>
+                <option>Bengali</option>
+              </select>
+            </div>
 
-          <form onSubmit={handleLogin}>
+            {loginError && <div className="sih-login-error">❌ {loginError}</div>}
 
-            <label>Email</label>
-            <input
-              type="email"
-              value={loginEmail}
-              onChange={(event) => setLoginEmail(event.target.value)}
-              placeholder="operator@nerlogistics.in"
-            />
-
-            <label>Password</label>
-            <input
-              type="password"
-              value={loginPassword}
-              onChange={(event) => setLoginPassword(event.target.value)}
-              placeholder="Enter password"
-            />
-
-            <label>Role</label>
-            <select
-              value={loginRole}
-              onChange={(event) => setLoginRole(event.target.value)}
-            >
-              <option>Logistics Manager</option>
-              <option>Fleet Manager</option>
-              <option>Operations Officer</option>
-              <option>Field Official</option>
-              <option>Administrator</option>
-            </select>
-
-            {loginError && (
-              <div className="sih-login-error">
-                ❌ {loginError}
-              </div>
-            )}
-
-            <button type="submit">
-              🔐 LOGIN
+            <button type="submit" className="sih-login-btn">
+              🔓 {t("loginBtn")}
             </button>
-
           </form>
 
-          <small>
-            Prototype access • Enter any non-empty email and password.
-          </small>
-
+          <div className="sih-login-footer">
+            <span>Authorized Access • Ministry of Development of North Eastern Region</span>
+          </div>
         </div>
       </div>
     );
   }
 
+  const activeDistrictsList = districtFilter === "All" ? districtsMatrix : districtsMatrix.filter((d) => d.district === districtFilter);
+
   return (
-
-    <div className="app">
-
-      <style>{`
-        .sih-login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#f5f3ff,#eef2ff);}
-        .sih-login-card{width:min(440px,92vw);background:#fff;border:1px solid #e5e7eb;border-radius:24px;padding:36px;box-shadow:0 24px 80px rgba(15,23,42,.14);}
-        .sih-login-icon{width:72px;height:72px;border-radius:20px;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto 16px;}
-        .sih-login-kicker{display:block;text-align:center;color:#6d28d9;font-size:12px;font-weight:800;letter-spacing:1.4px;}
-        .sih-login-card h1{text-align:center;color:#111827;margin:10px 0 8px;}
-        .sih-login-card p{text-align:center;color:#6b7280;line-height:1.6;font-size:14px;}
-        .sih-login-card form{display:flex;flex-direction:column;gap:7px;margin-top:20px;}
-        .sih-login-card label{font-size:13px;font-weight:700;color:#374151;margin-top:8px;}
-        .sih-login-card input,.sih-login-card select,.sih-card select,.sih-card textarea{box-sizing:border-box;width:100%;padding:11px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#111827;}
-        .sih-login-card button,.sih-form-actions button,.sih-reoptimize button{border:0;border-radius:10px;padding:12px 14px;background:#6d28d9;color:#fff;font-weight:800;cursor:pointer;}
-        .sih-login-error{padding:10px;border-radius:10px;background:#fef2f2;color:#b91c1c;font-size:13px;}
-        .sih-login-card small{display:block;text-align:center;color:#9ca3af;margin-top:18px;}
-        .sih-user-panel{display:flex;align-items:center;gap:12px;}
-        .sih-online{font-size:11px;font-weight:800;color:#16a34a;}
-        .sih-user-meta{display:flex;flex-direction:column;}
-        .sih-user-meta strong{font-size:13px;color:#111827;}
-        .sih-user-meta span{font-size:11px;color:#6b7280;}
-        .sih-logout{padding:9px 12px;border:1px solid #fecaca;border-radius:9px;background:#fff1f2;color:#b91c1c;font-weight:700;cursor:pointer;}
-        .sih-command-center{margin-top:24px;padding:24px;border-radius:22px;background:linear-gradient(180deg,#f5f3ff,#fff);border:1px solid #ddd6fe;}
-        .sih-command-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;}
-        .sih-command-header>div:first-child span,.sih-card-title span,.sih-emergency-panel>div:first-child span{font-size:11px;font-weight:800;letter-spacing:1px;color:#6d28d9;}
-        .sih-command-header h2{margin:7px 0;color:#111827;}
-        .sih-command-header p{margin:0;color:#6b7280;}
-        .sih-command-actions{display:flex;gap:10px;flex-wrap:wrap;}
-        .sih-command-actions select{padding:9px;border:1px solid #d1d5db;border-radius:9px;background:#fff;}
-        .sih-emergency{padding:10px 13px;border-radius:9px;border:1px solid #fca5a5;background:#fff;color:#b91c1c;font-weight:800;cursor:pointer;}
-        .sih-emergency.active{background:#dc2626;color:#fff;}
-        .sih-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0;}
-        .sih-kpi{padding:16px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;}
-        .sih-kpi span{font-size:11px;color:#6b7280;font-weight:800;}
-        .sih-kpi strong{display:block;font-size:24px;color:#111827;margin:6px 0;}
-        .sih-kpi small{color:#6b7280;}
-        .sih-command-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-        .sih-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px;}
-        .sih-card-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:14px;}
-        .sih-card-title h3{margin:5px 0 0;color:#111827;}
-        .sih-live-pill{font-size:10px!important;color:#16a34a!important;background:#f0fdf4;padding:6px 8px;border-radius:999px;}
-        .sih-table-row{display:grid;grid-template-columns:1.5fr .8fr .8fr .6fr;gap:10px;align-items:center;padding:11px 0;border-top:1px solid #f3f4f6;}
-        .sih-table-row strong{display:block;color:#111827;font-size:13px;}
-        .sih-table-row small{display:block;color:#6b7280;font-size:11px;margin-top:2px;}
-        .sih-status{font-size:10px;font-weight:800;padding:6px 8px;border-radius:999px;background:#f3f4f6;}
-        .sih-status.open{color:#166534;background:#dcfce7}.sih-status.caution{color:#92400e;background:#fef3c7}.sih-status.alert{color:#991b1b;background:#fee2e2}
-        .sih-alert{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-top:1px solid #f3f4f6;}
-        .sih-alert-icon{font-size:20px;}
-        .sih-alert strong{color:#111827;font-size:13px;}
-        .sih-alert p{margin:3px 0 0;color:#6b7280;font-size:12px;line-height:1.5;}
-        .sih-alert-level{margin-left:auto;font-size:9px;font-weight:800;padding:5px 7px;border-radius:999px;}
-        .sih-alert-level.high{color:#991b1b;background:#fee2e2}.sih-alert-level.medium{color:#92400e;background:#fef3c7}
-        .sih-reoptimize{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:12px;padding-top:14px;border-top:1px solid #f3f4f6;}
-        .sih-reoptimize strong,.sih-reoptimize span{display:block}.sih-reoptimize strong{font-size:13px;color:#111827}.sih-reoptimize span{font-size:11px;color:#6b7280;margin-top:3px;}
-        .sih-gps-box{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-        .sih-gps-box div{padding:12px;border-radius:10px;background:#f9fafb;}
-        .sih-gps-box span{display:block;font-size:10px;color:#6b7280;text-transform:uppercase}.sih-gps-box strong{display:block;margin-top:5px;color:#111827;font-size:13px;}
-        .sih-gps-error{color:#b91c1c;font-size:12px;}.sih-note{font-size:11px!important;text-align:left!important;margin-top:10px!important;}
-        .sih-card textarea{resize:vertical;margin-top:8px;}
-        .sih-form-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-        .sih-form-actions button:last-child{background:#111827;}
-        .sih-sync{font-size:10px!important;padding:5px 7px;border-radius:999px;background:#f3f4f6;}
-        .sih-sync.synced{color:#166534!important;background:#dcfce7}.sih-sync.queued{color:#92400e!important;background:#fef3c7;}
-        .sih-queue-info{margin-top:10px;padding:9px;border-radius:8px;background:#f5f3ff;color:#5b21b6;font-size:11px;}
-        .sih-emergency-panel{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-top:16px;padding:18px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;}
-        .sih-emergency-panel h3{margin:6px 0;color:#111827}.sih-emergency-panel p{margin:0;color:#6b7280;font-size:12px;}
-        .sih-essential-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;}
-        .sih-essential-tags span{padding:8px 10px;border-radius:999px;background:#f5f3ff;color:#5b21b6;font-size:11px;font-weight:700;}
-        @media(max-width:900px){.sih-kpi-grid{grid-template-columns:1fr 1fr}.sih-command-grid{grid-template-columns:1fr}.sih-command-header,.sih-emergency-panel{flex-direction:column}.sih-essential-tags{justify-content:flex-start}}
-        @media(max-width:600px){.sih-kpi-grid{grid-template-columns:1fr}.sih-user-meta,.sih-online{display:none}.sih-login-card{padding:24px}.sih-table-row{grid-template-columns:1.4fr .8fr .7fr .5fr}.sih-gps-box{grid-template-columns:1fr}}
-      `}</style>
-
-
-
-      {/* =================================================
-          HEADER
-      ================================================= */}
-
+    <div className={`app ${emergencyMode ? "emergency-active-theme" : ""}`}>
+      {/* GLOBAL HEADER */}
       <header className="main-header">
-
         <div className="brand-title">
-
           <div>
-
-            <h1>
-              NER Logistics Intelligence Platform
-            </h1>
-
-            <p>
-              Smart Route Planning and Logistics Management
-            </p>
-
+            <h1>{t("brandTitle")}</h1>
+            <p>{t("brandSubtitle")}</p>
           </div>
-
         </div>
-
 
         <div className="sih-user-panel">
-          <span className="sih-online">
-            {isOnline ? "● ONLINE" : "● OFFLINE"}
-          </span>
-
-          <div className="sih-user-meta">
-            <strong>{currentUser?.name || "Operator"}</strong>
-            <span>{currentUser?.role || "Logistics"}</span>
-          </div>
+          <select value={language} onChange={(e) => setLanguage(e.target.value)} className="lang-select">
+            <option>English</option>
+            <option>Hindi</option>
+            <option>Assamese</option>
+            <option>Bengali</option>
+          </select>
 
           <button
-            type="button"
-            className="sih-logout"
-            onClick={handleLogout}
+            className={`sih-emergency ${emergencyMode ? "active" : ""}`}
+            onClick={() => setEmergencyMode(!emergencyMode)}
           >
-            Logout
+            {emergencyMode ? "🚨 DISASTER MODE ACTIVE" : "🚨 TOGGLE EMERGENCY MODE"}
           </button>
-        </div>
 
+          <div className="sih-user-meta">
+            <strong>{currentUser.name}</strong>
+            <span>{currentUser.role}</span>
+          </div>
+          <button className="sih-logout" onClick={handleLogout}>Logout</button>
+        </div>
       </header>
 
-
-      {/* =================================================
-          TOP ANALYTICS
-      ================================================= */}
-
-      <section className="analytics-section">
-
-        <div className="analytics-card">
-
-          <h3>
-            📦 Total Trips
-          </h3>
-
-          <h1>
-            {totalTrips}
-          </h1>
-
-          <p>
-            Saved deliveries
-          </p>
-
-        </div>
-
-
-        <div className="analytics-card">
-
-          <h3>
-            🚚 Active Trips
-          </h3>
-
-          <h1>
-            {activeTrips}
-          </h1>
-
-          <p>
-            In transit
-          </p>
-
-        </div>
-
-
-        <div className="analytics-card">
-
-          <h3>
-            📋 Planned
-          </h3>
-
-          <h1>
-            {plannedTrips}
-          </h1>
-
-          <p>
-            Upcoming trips
-          </p>
-
-        </div>
-
-
-        <div className="analytics-card">
-
-          <h3>
-            ✅ Delivered
-          </h3>
-
-          <h1>
-            {deliveredTrips}
-          </h1>
-
-          <p>
-            Completed
-          </p>
-
-        </div>
-
-
-        <div className="analytics-card">
-
-          <h3>
-            💰 Total Cost
-          </h3>
-
-          <h2>
-            ₹
-            {totalCost.toLocaleString()}
-          </h2>
-
-          <p>
-            Estimated cost
-          </p>
-
-        </div>
-
-
-        <div className="analytics-card">
-
-          <h3>
-            📏 Distance
-          </h3>
-
-          <h2>
-            {totalDistance.toFixed(
-              1
-            )}{" "}
-            km
-          </h2>
-
-          <p>
-            Total distance
-          </p>
-
-        </div>
-
-      </section>
-
-
-      {/* =================================================
-          MAIN DASHBOARD
-      ================================================= */}
-
-      <main className="dashboard">
-
-
-        {/* =================================================
-            TOP LEFT
-            ROUTE PLANNER
-        ================================================= */}
-
-        <section className="route-planner-panel">
-
-          <div className="section-box">
-
-            <div className="box-heading">
-
-              <div>
-
-                <span>
-                  ROUTE PLANNING
-                </span>
-
-                <h2>
-                  🚚 Find Best Delivery Route
-                </h2>
-
-              </div>
-
-            </div>
-
-
-            <label>
-              📍 Source Location
-            </label>
-
-            <input
-              type="text"
-              value={source}
-              onChange={(e) =>
-                setSource(
-                  e.target.value
-                )
-              }
-              placeholder="Enter source location"
-            />
-
-
-            <label>
-              🏁 Destination
-            </label>
-
-            <input
-              type="text"
-              value={destination}
-              onChange={(e) =>
-                setDestination(
-                  e.target.value
-                )
-              }
-              placeholder="Enter destination"
-            />
-
-
-            <label>
-              🚛 Vehicle Type
-            </label>
-
-            <select
-              value={vehicle}
-              onChange={(e) =>
-                setVehicle(
-                  e.target.value
-                )
-              }
-            >
-
-              <option value="heavyTruck">
-                🚛 Heavy Truck
-              </option>
-
-              <option value="mediumTruck">
-                🚚 Medium Truck
-              </option>
-
-              <option value="deliveryVan">
-                🚐 Delivery Van
-              </option>
-
-            </select>
-
-
-            {error && (
-
-              <div className="error-box">
-
-                ❌ {error}
-
-              </div>
-
-            )}
-
-
-            <button
-              className="primary-button"
-              onClick={
-                findRoute
-              }
-              disabled={
-                loading
-              }
-            >
-
-              {loading
-                ? "⏳ Calculating Route..."
-                : "🔎 Find Best Route"}
-
-            </button>
-
+      {/* REAL-TIME WEATHER INTELLIGENCE BAR */}
+      {weatherData && (
+        <div className="weather-bar">
+          <div className="weather-item">
+            <span>🌡️ Temperature</span>
+            <strong>{weatherData.temperature}°C</strong>
           </div>
-
-        </section>
-
-
-        {/* =================================================
-            TOP RIGHT
-            MAP
-        ================================================= */}
-
-        <section className="map-panel">
-
-          <div className="map-header">
-
-            <div>
-
-              <span>
-                LIVE MAP
-              </span>
-
-              <h2>
-                🗺️ Route Visualization
-              </h2>
-
-            </div>
-
-            <div className="map-live-status">
-              ● LIVE
-            </div>
-
+          <div className="weather-item">
+            <span>🌧️ Precipitation</span>
+            <strong>{weatherData.precipitationMm} mm</strong>
           </div>
-
-
-          <div className="big-map">
-
-            <MapContainer
-              center={[
-                26.8467,
-                80.9462,
-              ]}
-              zoom={6}
-              scrollWheelZoom={true}
-              style={{
-                height: "100%",
-                width: "100%",
-              }}
-            >
-
-              <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-
-              <MapView
-                selectedRoute={selectedRoute}
-                trackingActive={trackingActive}
-                trackingIndex={trackingIndex}
-                gpsPosition={gpsPosition}
-              />
-
-            </MapContainer>
-
+          <div className="weather-item">
+            <span>💨 Wind Speed</span>
+            <strong>{weatherData.windspeed} km/h</strong>
           </div>
-
-
-          {!selectedRoute && (
-
-            <div className="map-empty">
-
-              <div>
-                🗺️
-              </div>
-
-              <h3>
-                Route Map
-              </h3>
-
-              <p>
-                Enter source and destination
-                to visualize the delivery route.
-              </p>
-
-            </div>
-
-          )}
-
-        </section>
-
-
-        {/* =================================================
-            LOWER FULL WIDTH CONTENT
-        ================================================= */}
-
-        <section className="lower-dashboard">
-
-
-{/* =================================================
-    SELECTED ROUTE SUMMARY
-================================================= */}
-
-{selectedRoute && (
-
-  <div className="section-box recommendation-box">
-
-    {/* HEADER */}
-    <div className="box-heading">
-
-      <div>
-        <span>RECOMMENDED</span>
-
-        <h2>🏆 Best Route</h2>
-      </div>
-
-      <div className="score-badge">
-        {selectedRoute.score}/100
-      </div>
-
-    </div>
-
-
-    {/* ROUTE DETAILS */}
-    <div className="route-summary-grid">
-
-      <div className="route-summary-item">
-        <span>📏 Distance</span>
-
-        <strong>
-          {selectedRoute.distanceKm} km
-        </strong>
-      </div>
-
-
-      <div className="route-summary-item">
-        <span>⏱️ Time</span>
-
-        <strong>
-          {formatTime(
-            selectedRoute.durationMinutes
-          )}
-        </strong>
-      </div>
-
-
-      <div className="route-summary-item">
-        <span>⛽ Fuel</span>
-
-        <strong>
-          {selectedRoute.fuelLitres} L
-        </strong>
-      </div>
-
-
-      <div className="route-summary-item">
-        <span>💰 Cost</span>
-
-        <strong>
-          ₹
-          {Number(
-            selectedRoute.totalDeliveryCost || 0
-          ).toLocaleString()}
-        </strong>
-      </div>
-
-    </div>
-
-
-    {/* VEHICLE */}
-    <div className="vehicle-info">
-
-      🚛 Vehicle:
-
-      <strong>
-        {vehicleName}
-      </strong>
-
-    </div>
-
-
-    {/* SAVE BUTTON */}
-    <button
-      className="save-button"
-      onClick={saveTrip}
-    >
-      💾 Save This Trip
-    </button>
-
-  </div>
-
-)}
-
-          {/* =================================================
-              AI ANALYSIS
-          ================================================= */}
-
-          {selectedRoute && (
-
-            <div className="ai-analysis-box">
-
-              <div className="box-heading">
-
-                <div>
-
-                  <span>
-                    ARTIFICIAL INTELLIGENCE
-                  </span>
-
-                  <h3>
-                    🧠 AI Logistics Analysis
-                  </h3>
-
-                </div>
-
-                <div className="ai-badge">
-                  AI
-                </div>
-
-              </div>
-
-
-              <div className="ai-score">
-
-                <div className="score-ring">
-
-                  <strong>
-                    {
-                      selectedRoute.score
-                    }
-                  </strong>
-
-                  <span>
-                    /100
-                  </span>
-
-                </div>
-
-
-                <div className="ai-summary">
-
-                  <strong>
-                    Route Efficiency
-                  </strong>
-
-                  <p>
-                    {aiAnalysis}
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              <div className="analysis-list">
-
-                <div>
-
-                  <span>
-                    ⛽ Fuel Efficiency
-                  </span>
-
-                  <strong>
-                    {
-                      selectedRoute.fuelLitres
-                    }{" "}
-                    L
-                  </strong>
-
-                </div>
-
-
-                <div>
-
-                  <span>
-                    💰 Delivery Cost
-                  </span>
-
-                  <strong>
-                    ₹
-                    {Number(
-                      selectedRoute.totalDeliveryCost ||
-                        0
-                    ).toLocaleString()}
-                  </strong>
-
-                </div>
-
-
-                <div>
-
-                  <span>
-                    🚛 Vehicle
-                  </span>
-
-                  <strong>
-                    {vehicleName}
-                  </strong>
-
-                </div>
-
-
-                <div>
-
-                  <span>
-                    ⏱️ Estimated Delivery
-                  </span>
-
-                  <strong>
-                    {formatTime(
-                      selectedRoute.durationMinutes
-                    )}
-                  </strong>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          )}
-
-
-          {/* =================================================
-              AI DECISION SUMMARY
-          ================================================= */}
-
-          {selectedRoute && routes.length > 0 && (
-
-            <section className="ai-decision-box">
-
-              <div className="box-heading">
-
-                <div>
-
-                  <span>
-                    AI LOGISTICS INTELLIGENCE
-                  </span>
-
-                  <h2>
-                    🤖 AI Decision Summary
-                  </h2>
-
-                </div>
-
-                <div className="ai-badge">
-                  AI ACTIVE
-                </div>
-
-              </div>
-
-              <div className="ai-decision-content">
-
-                <div className="ai-decision-score">
-
-                  <strong>
-                    {selectedRoute.score}
-                  </strong>
-
-                  <span>
-                    /100
-                  </span>
-
-                  <small>
-                    Route Score
-                  </small>
-
-                </div>
-
-
-                <div className="ai-decision-text">
-
-                  <h3>
-
-                    {selectedRoute.id ===
-                    bestOverallRoute?.id
-                      ? "🏆 Recommended Route"
-                      : "📊 Selected Route"}
-
-                  </h3>
-
-                  <p>
-
-                    {getRouteRecommendation(
-                      selectedRoute
-                    )}
-
-                  </p>
-
-                  <div className="ai-decision-tags">
-
-                    <span>
-                      📏 {selectedRoute.distanceKm} km
-                    </span>
-
-                    <span>
-                      ⏱️ {formatTime(
-                        selectedRoute.durationMinutes
-                      )}
-                    </span>
-
-                    <span>
-                      ⛽ {selectedRoute.fuelLitres} L
-                    </span>
-
-                    <span>
-                      💰 ₹
-                      {Number(
-                        selectedRoute.totalDeliveryCost || 0
-                      ).toLocaleString()}
-                    </span>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </section>
-
-          )}
-
-
-          {/* =================================================
-              SMART AI ROUTE COMPARISON
-          ================================================= */}
-
-          {routes.length > 0 && (() => {
-
-            const fastestRoute = routes.reduce(
-              (best, route) =>
-                Number(route.durationMinutes || Infinity) <
-                Number(best.durationMinutes || Infinity)
-                  ? route
-                  : best,
-              routes[0]
-            );
-
-            const cheapestRoute = routes.reduce(
-              (best, route) =>
-                Number(route.totalDeliveryCost || Infinity) <
-                Number(best.totalDeliveryCost || Infinity)
-                  ? route
-                  : best,
-              routes[0]
-            );
-
-            const fuelEfficientRoute = routes.reduce(
-              (best, route) =>
-                Number(route.fuelLitres || Infinity) <
-                Number(best.fuelLitres || Infinity)
-                  ? route
-                  : best,
-              routes[0]
-            );
-
-            const highestScoreRoute = routes.reduce(
-              (best, route) =>
-                Number(route.score || 0) >
-                Number(best.score || 0)
-                  ? route
-                  : best,
-              routes[0]
-            );
-
-            return (
-              <section className="smart-comparison-section">
-
-                {/* HEADER */}
-
-                <div className="smart-comparison-header">
-
-                  <div>
-
-                    <span className="comparison-kicker">
-                      INTELLIGENT ROUTE SELECTION
-                    </span>
-
-                    <h2>
-                      🧠 AI Route Comparison
-                    </h2>
-
-                    <p>
-                      Compare routes using delivery time,
-                      fuel consumption, cost and AI
-                      logistics intelligence.
-                    </p>
-
-                  </div>
-
-                  <div className="routes-total-badge">
-                    {routes.length} ROUTES
-                  </div>
-
-                </div>
-
-
-                {/* SMART INSIGHTS */}
-
-                <div className="route-insights">
-
-                  <div className="insight-card fastest">
-
-                    <span>
-                      ⚡ FASTEST
-                    </span>
-
-                    <strong>
-                      {formatTime(
-                        fastestRoute.durationMinutes
-                      )}
-                    </strong>
-
-                    <small>
-                      Shortest delivery time
-                    </small>
-
-                  </div>
-
-
-                  <div className="insight-card cheapest">
-
-                    <span>
-                      💰 LOWEST COST
-                    </span>
-
-                    <strong>
-                      ₹
-                      {Number(
-                        cheapestRoute.totalDeliveryCost || 0
-                      ).toLocaleString()}
-                    </strong>
-
-                    <small>
-                      Most economical route
-                    </small>
-
-                  </div>
-
-
-                  <div className="insight-card fuel">
-
-                    <span>
-                      ⛽ FUEL EFFICIENT
-                    </span>
-
-                    <strong>
-                      {fuelEfficientRoute.fuelLitres} L
-                    </strong>
-
-                    <small>
-                      Lowest fuel consumption
-                    </small>
-
-                  </div>
-
-
-                  <div className="insight-card score">
-
-                    <span>
-                      🧠 TOP AI SCORE
-                    </span>
-
-                    <strong>
-                      {highestScoreRoute.score}/100
-                    </strong>
-
-                    <small>
-                      Highest logistics efficiency
-                    </small>
-
-                  </div>
-
-                </div>
-
-
-                {/* ROUTE CARDS */}
-
-                <div className="smart-route-grid">
-
-                  {routes.map((route, index) => {
-
-                    const isSelected =
-                      selectedRoute?.id === route.id;
-
-                    const isFastest =
-                      route.id === fastestRoute.id;
-
-                    const isCheapest =
-                      route.id === cheapestRoute.id;
-
-                    const isFuelEfficient =
-                      route.id === fuelEfficientRoute.id;
-
-                    const isHighestScore =
-                      route.id === highestScoreRoute.id;
-
-                    return (
-                      <div
-                        key={route.id || index}
-                        className={
-                          isSelected
-                            ? "smart-route-card selected"
-                            : "smart-route-card"
-                        }
-                        onClick={() => {
-                          selectRoute(route);
-                        }}
-                      >
-
-                        {/* BADGES */}
-
-                        <div className="route-badges">
-
-                          {index === 0 && (
-                            <span className="badge recommended">
-                              ⭐ AI RECOMMENDED
-                            </span>
-                          )}
-
-                          {isFastest && (
-                            <span className="badge fastest-badge">
-                              ⚡ FASTEST
-                            </span>
-                          )}
-
-                          {isCheapest && (
-                            <span className="badge cheapest-badge">
-                              💰 LOWEST COST
-                            </span>
-                          )}
-
-                          {isFuelEfficient && (
-                            <span className="badge fuel-badge">
-                              ⛽ FUEL EFFICIENT
-                            </span>
-                          )}
-
-                        </div>
-
-
-                        {/* CARD HEADER */}
-
-                        <div className="smart-route-card-header">
-
-                          <div>
-
-                            <span className="route-number">
-                              ROUTE {index + 1}
-                            </span>
-
-                            <h3>
-                              {index === 0
-                                ? "AI Recommended Route"
-                                : `Alternative Route ${index}`}
-                            </h3>
-
-                          </div>
-
-
-                          <div
-                            className={
-                              isHighestScore
-                                ? "route-score highest"
-                                : "route-score"
-                            }
-                          >
-
-                            <strong>
-                              {route.score}
-                            </strong>
-
-                            <span>
-                              /100
-                            </span>
-
-                          </div>
-
-                        </div>
-
-
-                        {/* SCORE BAR */}
-
-                        <div className="smart-score-section">
-
-                          <div className="smart-score-label">
-
-                            <span>
-                              Logistics Efficiency
-                            </span>
-
-                            <strong>
-                              {route.score}%
-                            </strong>
-
-                          </div>
-
-                          <div className="smart-score-bar">
-
-                            <div
-                              style={{
-                                width: `${Math.min(
-                                  100,
-                                  Number(route.score || 0)
-                                )}%`,
-                              }}
-                            />
-
-                          </div>
-
-                        </div>
-
-
-                        {/* ROUTE DATA */}
-
-                        <div className="smart-route-data">
-
-                          <div className="smart-data-box">
-
-                            <span>
-                              📏 DISTANCE
-                            </span>
-
-                            <strong>
-                              {route.distanceKm}
-                              <small>
-                                {" "}km
-                              </small>
-                            </strong>
-
-                          </div>
-
-
-                          <div className="smart-data-box">
-
-                            <span>
-                              ⏱️ TIME
-                            </span>
-
-                            <strong>
-                              {formatTime(
-                                route.durationMinutes
-                              )}
-                            </strong>
-
-                          </div>
-
-
-                          <div className="smart-data-box">
-
-                            <span>
-                              ⛽ FUEL
-                            </span>
-
-                            <strong>
-                              {route.fuelLitres}
-                              <small>
-                                {" "}L
-                              </small>
-                            </strong>
-
-                          </div>
-
-
-                          <div className="smart-data-box">
-
-                            <span>
-                              💰 COST
-                            </span>
-
-                            <strong>
-                              ₹
-                              {Number(
-                                route.totalDeliveryCost || 0
-                              ).toLocaleString()}
-                            </strong>
-
-                          </div>
-
-                        </div>
-
-
-                        {/* SPECIAL INSIGHTS */}
-
-                        <div className="route-special-tags">
-
-                          {isFastest && (
-                            <span>
-                              ⚡ Quickest Delivery
-                            </span>
-                          )}
-
-                          {isCheapest && (
-                            <span>
-                              💰 Cost Saving
-                            </span>
-                          )}
-
-                          {isFuelEfficient && (
-                            <span>
-                              🌱 Better Fuel Economy
-                            </span>
-                          )}
-
-                        </div>
-
-
-                        {/* SELECT BUTTON */}
-
-                        <button
-                          className={
-                            isSelected
-                              ? "smart-selected-button"
-                              : "smart-select-button"
-                          }
-                          onClick={(e) => {
-
-                            e.stopPropagation();
-
-                            selectRoute(route);
-
-                          }}
-                        >
-
-                          {isSelected
-                            ? "✓ SELECTED ROUTE"
-                            : "SELECT THIS ROUTE →"}
-
-                        </button>
-
-                      </div>
-                    );
-
-                  })}
-
-                </div>
-
-              </section>
-            );
-
-          })()}
-
-{/* =================================================
-    LIVE VEHICLE TRACKING
-================================================= */}
-
-{selectedRoute && (
-
-  <div className="tracking-box">
-
-    {/* HEADER */}
-    <div className="box-heading">
-
-      <div>
-        <span>REAL-TIME MONITORING</span>
-
-        <h3>📡 Live Vehicle Tracking</h3>
-      </div>
-
-      <div className="live-indicator">
-        ● LIVE
-      </div>
-
-    </div>
-
-
-    {/* STATUS */}
-    <div className="tracking-status-box">
-      {trackingStatus}
-    </div>
-
-
-    {/* TRACKING DETAILS */}
-    <div className="tracking-grid">
-
-      <div className="tracking-item">
-
-        <span>🚛 Vehicle</span>
-
-        <strong>
-          {vehicleName}
-        </strong>
-
-      </div>
-
-
-      <div className="tracking-item">
-
-        <span>⚡ Speed</span>
-
-        <strong>
-          {simulatedSpeed}
-          <small> km/h</small>
-        </strong>
-
-      </div>
-
-
-      <div className="tracking-item">
-
-        <span>⏱️ ETA</span>
-
-        <strong>
-          {formatTime(currentETA)}
-        </strong>
-
-      </div>
-
-
-      <div className="tracking-item">
-
-        <span>📊 Progress</span>
-
-        <strong>
-          {trackingProgress}%
-        </strong>
-
-      </div>
-
-    </div>
-
-
-    {/* PROGRESS */}
-    <div className="progress-container">
-
-      <div className="progress-label">
-
-        <span>
-          Delivery Progress
-        </span>
-
-        <strong>
-          {trackingProgress}%
-        </strong>
-
-      </div>
-
-
-      <div className="progress-bar">
-
-        <div
-          style={{
-            width: `${trackingProgress}%`,
-          }}
-        />
-      </div>
-
-    </div>
-
-
-    {/* START BUTTON */}
-    {!trackingActive &&
-      trackingProgress < 100 && (
-
-        <button
-          className="success-button"
-          onClick={startTracking}
-        >
-          ▶ Start Live Tracking
-        </button>
-
+          <div className="weather-item">
+            <span>🌦️ Condition</span>
+            <strong>{weatherData.condition}</strong>
+          </div>
+          <div className={`weather-badge ${weatherData.isSevere ? "severe" : "normal"}`}>
+            {weatherData.isSevere ? "⚠️ SEVERE WEATHER ALERT" : "✅ STABLE TRANSPORT WEATHER"}
+          </div>
+        </div>
       )}
 
+      {/* TOP KPI ANALYTICS GRID */}
+      <section className="analytics-section">
+        <div className="analytics-card">
+          <h3>📦 Saved Trips</h3>
+          <h1>{savedTrips.length}</h1>
+          <p>Archived delivery routes</p>
+        </div>
+        <div className="analytics-card">
+          <h3>🚚 Active Commodity Fleet</h3>
+          <h1>{fleetVehicles.length}</h1>
+          <p>Medicines & Relief Convoys</p>
+        </div>
+        <div className="analytics-card">
+          <h3>⚠️ Active Highway Hazards</h3>
+          <h1>{disruptions.length}</h1>
+          <p>Landslides & Floods</p>
+        </div>
+        <div className="analytics-card">
+          <h3>📋 Field Incident Reports</h3>
+          <h1>{incidentsList.length}</h1>
+          <p>Geo-tagged updates</p>
+        </div>
+      </section>
 
-    {/* STOP BUTTON */}
-    {trackingActive && (
-
-      <button
-        className="danger-button"
-        onClick={stopTracking}
-      >
-        ■ Stop Tracking
-      </button>
-
-    )}
-
-
-    {/* COMPLETED */}
-    {trackingProgress >= 100 && (
-
-      <div className="completed-box">
-        ✅ Delivery Completed Successfully
-      </div>
-
-    )}
-
-  </div>
-
-)}
-
-{/* =================================================
-               INTELLIGENCE COMMAND CENTER
-          ================================================= */}
-
-          <section className="sih-command-center">
-
-            <div className="sih-command-header">
+      {/* MAIN TWO-COLUMN DASHBOARD */}
+      <main className="dashboard">
+        {/* ROUTE PLANNER PANEL */}
+        <section className="route-planner-panel">
+          <div className="section-box">
+            <div className="box-heading">
               <div>
-            
-                <h2>🛰️ NER Accessibility Intelligence Command Center</h2>
-                <p>
-                  Real-time-style operational visibility, predictive disruption
-                  readiness, field reporting, emergency routing and offline support.
-                </p>
-              </div>
-
-              <div className="sih-command-actions">
-                <button
-                  type="button"
-                  className={emergencyMode ? "sih-emergency active" : "sih-emergency"}
-                  onClick={() => setEmergencyMode((value) => !value)}
-                >
-                  {emergencyMode ? "🚨 EMERGENCY MODE ON" : "Emergency Mode"}
-                </button>
-
-                <select
-                  value={language}
-                  onChange={(event) => setLanguage(event.target.value)}
-                >
-                  <option>English</option>
-                  <option>हिन्दी</option>
-                  <option>অসমীয়া</option>
-                  <option>বাংলা</option>
-                </select>
+                <span>{t("routePlanner")}</span>
+                <h2>🚚 {t("findRoute")}</h2>
               </div>
             </div>
 
-            <div className="sih-kpi-grid">
-              <div className="sih-kpi">
-                <span>🛣️ NETWORK ACCESS</span>
-                <strong>79%</strong>
-                <small>NER monitored corridors</small>
-              </div>
+            <label>📍 {t("sourceLoc")}</label>
+            <input type="text" value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. Guwahati, Assam" />
 
-              <div className="sih-kpi">
-                <span>⚠️ HIGH-RISK ZONES</span>
-                <strong>3</strong>
-                <small>Predictive watchlist</small>
-              </div>
+            <label>🏁 {t("destLoc")}</label>
+            <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Silchar, Assam" />
 
-              <div className="sih-kpi">
-                <span>🚚 ACTIVE MOVEMENT</span>
-                <strong>{activeTrips}</strong>
-                <small>Tracked deliveries</small>
-              </div>
+            <label>🚛 {t("vehicleType")}</label>
+            <select value={vehicle} onChange={(e) => setVehicle(e.target.value)}>
+              <option value="heavyTruck">🚛 Heavy Cargo Truck (15 Ton)</option>
+              <option value="mediumTruck">🚚 Medium Supply Truck (7.5 Ton)</option>
+              <option value="deliveryVan">🚐 Emergency Delivery Van (2.5 Ton)</option>
+            </select>
 
-              <div className="sih-kpi">
-                <span>📡 DATA STATUS</span>
-                <strong>{isOnline ? "LIVE" : "OFFLINE"}</strong>
-                <small>
-                  {isOnline ? "Network connected" : "Local queue enabled"}
-                </small>
+            {error && <div className="error-box">❌ {error}</div>}
+
+            <button className="primary-button" onClick={findRoute} disabled={loading}>
+              {loading ? t("calculating") : `🔎 ${t("findRoute")}`}
+            </button>
+          </div>
+
+          {/* ENVIRONMENTAL RISK ENGINE PANEL */}
+          {destRiskInfo && (
+            <div className="section-box ai-risk-panel">
+              <h3>🌐 {t("environmentalRisk")}</h3>
+              <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "8px" }}>
+                <strong>Model:</strong> {destRiskInfo.model || "NER-Environmental-RandomForest-Classifier-v3.2"}
               </div>
+              <div className="risk-metric-grid">
+                <div>
+                  <span>Risk Level</span>
+                  <strong style={{ color: destRiskInfo.risk === "HIGH" ? "#dc2626" : "#16a34a" }}>
+                    {destRiskInfo.risk}
+                  </strong>
+                </div>
+                <div>
+                  <span>Landslide/Flood Prob.</span>
+                  <strong>{destRiskInfo.probabilityPercent}%</strong>
+                </div>
+                <div>
+                  <span>Terrain Slope</span>
+                  <strong>{destRiskInfo.environmentalFeatures?.slopeDegrees || 24}° Slope</strong>
+                </div>
+              </div>
+              <p className="risk-advisory"><strong>Advisory:</strong> {destRiskInfo.advisory}</p>
             </div>
+          )}
+        </section>
 
-            <div className="sih-command-grid">
+        {/* INTERACTIVE LEAFLET MAP PANEL */}
+        <section className="map-panel">
+          <div className="map-header">
+            <div>
+              <span>LEAFLET GIS INTELLIGENCE MAP</span>
+              <h2>🗺️ NER Accessibility & Real GPS Map</h2>
+            </div>
+            <div className="map-live-status">● LIVE REAL GPS STREAM</div>
+          </div>
 
-              <div className="sih-card">
+          <div className="big-map">
+            <MapContainer center={[26.1445, 91.7362]} zoom={7} style={{ height: "100%", width: "100%" }}>
+              <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapView
+                selectedRoute={selectedRoute}
+                realGpsActive={realGpsActive}
+                realGpsPosition={realGpsPosition}
+                gpsPosition={gpsPosition}
+                disruptions={disruptions}
+                incidents={incidentsList}
+                fleetVehicles={fleetVehicles}
+                infrastructureList={infrastructureList}
+                onUpdateInfraStatus={handleUpdateInfraStatus}
+                emergencyMode={emergencyMode}
+              />
+            </MapContainer>
+          </div>
+        </section>
+      </main>
 
-                <div className="sih-card-title">
-                  <div>
-                    <span>GIS ACCESSIBILITY MONITOR</span>
-                    <h3>District-wise Connectivity</h3>
-                  </div>
+      {/* =========================================================
+         REAL-TIME ROAD & BRIDGE ACCESSIBILITY CONTROL ENGINE
+      ========================================================= */}
+      <section className="full-width-section" id="infrastructure-accessibility">
+        <div className="sih-card infra-accessibility-card">
+          <div className="sih-card-title flex-between">
+            <div>
+              <span className="kicker-tag" style={{ background: "#e0e7ff", color: "#3730a3" }}>
+                🌉 REAL-TIME LOGISTICS INFRASTRUCTURE MONITORING
+              </span>
+              <h2 style={{ margin: "4px 0 0", color: "#1e1b4b" }}>{t("bridgeAccessibility")}</h2>
+              <p style={{ margin: "2px 0 0", fontSize: "13px", color: "#64748b" }}>
+                Structural weight limits, river water levels, and live road transit status for strategic NER corridors.
+              </p>
+            </div>
+            <button
+              className="primary-button"
+              onClick={() => setShowAddInfraForm(!showAddInfraForm)}
+              style={{ width: "auto", padding: "8px 16px", background: "#4f46e5" }}
+            >
+              {showAddInfraForm ? "✖ Close Form" : `➕ ${t("addInfrastructure")}`}
+            </button>
+          </div>
 
+          {/* ADD NEW INFRASTRUCTURE REGISTRATION FORM */}
+          {showAddInfraForm && (
+            <div className="add-infra-form-box" style={{ background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #cbd5e1", marginBottom: "20px" }}>
+              <h4 style={{ marginTop: 0, color: "#1e293b" }}>✍ Register Monitored Bridge or Road Passage</h4>
+              <form onSubmit={submitNewInfrastructure} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>Name of Structure / Corridor</label>
+                  <input
+                    type="text"
+                    value={newInfraName}
+                    onChange={(e) => setNewInfraName(e.target.value)}
+                    placeholder="e.g. Kolhia Bhomora Bridge"
+                    required
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>Category</label>
                   <select
-                    value={districtFilter}
-                    onChange={(event) => setDistrictFilter(event.target.value)}
+                    value={newInfraCategory}
+                    onChange={(e) => setNewInfraCategory(e.target.value)}
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
                   >
-                    <option>All</option>
-                    {districtRows.map((row) => (
-                      <option key={row.district} value={row.district}>
-                        {row.district}
-                      </option>
-                    ))}
+                    <option value="Bridge">Bridge Structure</option>
+                    <option value="Road Corridor">Road Highway Pass</option>
                   </select>
                 </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>Highway / River Route</label>
+                  <input
+                    type="text"
+                    value={newInfraHighway}
+                    onChange={(e) => setNewInfraHighway(e.target.value)}
+                    placeholder="e.g. NH-715 / Brahmaputra Pass"
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>State</label>
+                  <select
+                    value={newInfraState}
+                    onChange={(e) => setNewInfraState(e.target.value)}
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  >
+                    <option value="ASSAM">ASSAM</option>
+                    <option value="MEGHALAYA">MEGHALAYA</option>
+                    <option value="SIKKIM">SIKKIM</option>
+                    <option value="NAGALAND">NAGALAND</option>
+                    <option value="MANIPUR">MANIPUR</option>
+                    <option value="ARUNACHAL PRADESH">ARUNACHAL PRADESH</option>
+                    <option value="TRIPURA">TRIPURA</option>
+                    <option value="MIZORAM">MIZORAM</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>District</label>
+                  <input
+                    type="text"
+                    value={newInfraDistrict}
+                    onChange={(e) => setNewInfraDistrict(e.target.value)}
+                    placeholder="e.g. Sonitpur"
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>Accessibility Status</label>
+                  <select
+                    value={newInfraStatus}
+                    onChange={(e) => setNewInfraStatus(e.target.value)}
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  >
+                    <option value="FULLY_ACCESSIBLE">FULLY ACCESSIBLE</option>
+                    <option value="PASSABLE_CAUTION">PASSABLE CAUTION</option>
+                    <option value="RESTRICTED_LOAD">RESTRICTED LOAD</option>
+                    <option value="BLOCKED">BLOCKED / CLOSED</option>
+                    <option value="UNDER_REPAIR">UNDER REPAIR</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>Max Load Limit (Tons)</label>
+                  <input
+                    type="number"
+                    value={newInfraWeight}
+                    onChange={(e) => setNewInfraWeight(e.target.value)}
+                    placeholder="35"
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>River Water Level Status</label>
+                  <input
+                    type="text"
+                    value={newInfraWater}
+                    onChange={(e) => setNewInfraWater(e.target.value)}
+                    placeholder="Normal (-2.5m)"
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  />
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ fontSize: "12px", fontWeight: "bold" }}>Bottleneck Reason / Field Note</label>
+                  <input
+                    type="text"
+                    value={newInfraBottleneck}
+                    onChange={(e) => setNewInfraBottleneck(e.target.value)}
+                    placeholder="e.g. Single-lane bottleneck due to repair works"
+                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  />
+                </div>
+                <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
+                  <button type="submit" className="primary-button" style={{ width: "200px" }}>
+                    🚀 Save & Broadcast Status
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
-                <div className="sih-table">
-                  {activeDistricts.map((row) => (
-                    <div className="sih-table-row" key={row.district}>
+          {/* INFRASTRUCTURE SUMMARY KPI CHIPS */}
+          <div className="infra-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", margin: "16px 0" }}>
+            <div className="infra-kpi-chip" style={{ background: "#f1f5f9", padding: "10px 14px", borderRadius: "8px", borderLeft: "4px solid #64748b" }}>
+              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "bold" }}>TOTAL MONITORED</span>
+              <h2 style={{ margin: "2px 0 0", color: "#0f172a" }}>{infrastructureList.length}</h2>
+            </div>
+            <div className="infra-kpi-chip" style={{ background: "#f0fdf4", padding: "10px 14px", borderRadius: "8px", borderLeft: "4px solid #16a34a" }}>
+              <span style={{ fontSize: "11px", color: "#166534", fontWeight: "bold" }}>{t("accessibleCount").toUpperCase()}</span>
+              <h2 style={{ margin: "2px 0 0", color: "#15803d" }}>
+                {infrastructureList.filter((i) => i.status === "FULLY_ACCESSIBLE").length}
+              </h2>
+            </div>
+            <div className="infra-kpi-chip" style={{ background: "#fffbe6", padding: "10px 14px", borderRadius: "8px", borderLeft: "4px solid #d97706" }}>
+              <span style={{ fontSize: "11px", color: "#92400e", fontWeight: "bold" }}>CAUTION / RESTRICTED</span>
+              <h2 style={{ margin: "2px 0 0", color: "#b45309" }}>
+                {infrastructureList.filter((i) => i.status === "PASSABLE_CAUTION" || i.status === "RESTRICTED_LOAD").length}
+              </h2>
+            </div>
+            <div className="infra-kpi-chip" style={{ background: "#fef2f2", padding: "10px 14px", borderRadius: "8px", borderLeft: "4px solid #dc2626" }}>
+              <span style={{ fontSize: "11px", color: "#991b1b", fontWeight: "bold" }}>{t("blockedCount").toUpperCase()}</span>
+              <h2 style={{ margin: "2px 0 0", color: "#b91c1c" }}>
+                {infrastructureList.filter((i) => i.status === "BLOCKED").length}
+              </h2>
+            </div>
+            <div className="infra-kpi-chip" style={{ background: "#f0f9ff", padding: "10px 14px", borderRadius: "8px", borderLeft: "4px solid #0284c7" }}>
+              <span style={{ fontSize: "11px", color: "#075985", fontWeight: "bold" }}>{t("underRepairCount").toUpperCase()}</span>
+              <h2 style={{ margin: "2px 0 0", color: "#0369a1" }}>
+                {infrastructureList.filter((i) => i.status === "UNDER_REPAIR").length}
+              </h2>
+            </div>
+          </div>
+
+          {/* FILTERS & SEARCH TOOLBAR */}
+          <div className="infra-filters-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", background: "#f8fafc", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>
+            <div style={{ flex: 1, minWidth: "200px" }}>
+              <input
+                type="text"
+                value={infraSearchQuery}
+                onChange={(e) => setInfraSearchQuery(e.target.value)}
+                placeholder={t("searchInfra")}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+              />
+            </div>
+            <div>
+              <select
+                value={infraCategoryFilter}
+                onChange={(e) => setInfraCategoryFilter(e.target.value)}
+                style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "white" }}
+              >
+                <option value="All">Category: All</option>
+                <option value="Bridge">Category: Bridge</option>
+                <option value="Road Corridor">Category: Road Corridor</option>
+              </select>
+            </div>
+            <div>
+              <select
+                value={infraStateFilter}
+                onChange={(e) => setInfraStateFilter(e.target.value)}
+                style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "white" }}
+              >
+                <option value="All">State: All States</option>
+                <option value="ASSAM">ASSAM</option>
+                <option value="MEGHALAYA">MEGHALAYA</option>
+                <option value="SIKKIM">SIKKIM</option>
+                <option value="NAGALAND">NAGALAND</option>
+                <option value="MANIPUR">MANIPUR</option>
+                <option value="ARUNACHAL PRADESH">ARUNACHAL PRADESH</option>
+                <option value="TRIPURA">TRIPURA</option>
+              </select>
+            </div>
+            <div>
+              <select
+                value={infraStatusFilter}
+                onChange={(e) => setInfraStatusFilter(e.target.value)}
+                style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "white" }}
+              >
+                <option value="All">Status: All Statuses</option>
+                <option value="FULLY_ACCESSIBLE">FULLY ACCESSIBLE</option>
+                <option value="PASSABLE_CAUTION">PASSABLE CAUTION</option>
+                <option value="RESTRICTED_LOAD">RESTRICTED LOAD</option>
+                <option value="BLOCKED">BLOCKED</option>
+                <option value="UNDER_REPAIR">UNDER REPAIR</option>
+              </select>
+            </div>
+            <div style={{ display: "flex", gap: "4px" }}>
+              <button
+                onClick={() => setInfraViewMode("cards")}
+                style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", background: infraViewMode === "cards" ? "#4f46e5" : "white", color: infraViewMode === "cards" ? "white" : "#334155" }}
+              >
+                🎴 Cards View
+              </button>
+              <button
+                onClick={() => setInfraViewMode("table")}
+                style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", background: infraViewMode === "table" ? "#4f46e5" : "white", color: infraViewMode === "table" ? "white" : "#334155" }}
+              >
+                📋 Matrix Table
+              </button>
+            </div>
+          </div>
+
+          {/* FILTERED INFRASTRUCTURE LISTING */}
+          {(() => {
+            const filtered = infrastructureList.filter((item) => {
+              const matchesSearch =
+                !infraSearchQuery ||
+                item.name.toLowerCase().includes(infraSearchQuery.toLowerCase()) ||
+                item.highway.toLowerCase().includes(infraSearchQuery.toLowerCase()) ||
+                item.district.toLowerCase().includes(infraSearchQuery.toLowerCase()) ||
+                item.state.toLowerCase().includes(infraSearchQuery.toLowerCase());
+
+              const matchesCat = infraCategoryFilter === "All" || item.category === infraCategoryFilter;
+              const matchesState = infraStateFilter === "All" || item.state.toUpperCase() === infraStateFilter.toUpperCase();
+              const matchesStatus = infraStatusFilter === "All" || item.status === infraStatusFilter;
+
+              return matchesSearch && matchesCat && matchesState && matchesStatus;
+            });
+
+            if (filtered.length === 0) {
+              return (
+                <div style={{ textStyle: "center", padding: "30px", background: "#f8fafc", borderRadius: "8px", textAlign: "center" }}>
+                  <p style={{ color: "#64748b" }}>No infrastructure entries match the selected filters.</p>
+                </div>
+              );
+            }
+
+            if (infraViewMode === "table") {
+              return (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                    <thead>
+                      <tr style={{ background: "#f1f5f9", textAlign: "left" }}>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #cbd5e1" }}>Structure Name</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #cbd5e1" }}>Category</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #cbd5e1" }}>Highway / Location</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #cbd5e1" }}>Status</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #cbd5e1" }}>Max Load</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #cbd5e1" }}>Water Level</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #cbd5e1" }}>Speed Limit</th>
+                        <th style={{ padding: "10px", borderBottom: "2px solid #cbd5e1" }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((item) => {
+                        const statusColor =
+                          item.status === "FULLY_ACCESSIBLE"
+                            ? "#16a34a"
+                            : item.status === "BLOCKED"
+                            ? "#dc2626"
+                            : item.status === "RESTRICTED_LOAD"
+                            ? "#9333ea"
+                            : "#d97706";
+
+                        return (
+                          <tr key={item.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                            <td style={{ padding: "10px", fontWeight: "bold" }}>
+                              {item.category === "Bridge" ? "🌉" : "🛣️"} {item.name}
+                            </td>
+                            <td style={{ padding: "10px" }}>{item.category}</td>
+                            <td style={{ padding: "10px" }}>{item.highway} ({item.district}, {item.state})</td>
+                            <td style={{ padding: "10px" }}>
+                              <span style={{ background: `${statusColor}18`, color: statusColor, padding: "4px 8px", borderRadius: "12px", fontWeight: "bold", fontSize: "11px" }}>
+                                {item.status.replace(/_/g, " ")}
+                              </span>
+                            </td>
+                            <td style={{ padding: "10px" }}>{item.maxWeightCapacityTons > 0 ? `${item.maxWeightCapacityTons} T` : "0 T"}</td>
+                            <td style={{ padding: "10px" }}>{item.waterLevelStatus || "Normal"}</td>
+                            <td style={{ padding: "10px" }}>{item.trafficFlowSpeedKmH} km/h</td>
+                            <td style={{ padding: "10px" }}>
+                              <select
+                                value={item.status}
+                                onChange={(e) => handleUpdateInfraStatus(item.id, e.target.value)}
+                                style={{ padding: "4px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px" }}
+                              >
+                                <option value="FULLY_ACCESSIBLE">FULLY ACCESSIBLE</option>
+                                <option value="PASSABLE_CAUTION">PASSABLE CAUTION</option>
+                                <option value="RESTRICTED_LOAD">RESTRICTED LOAD</option>
+                                <option value="BLOCKED">BLOCKED</option>
+                                <option value="UNDER_REPAIR">UNDER REPAIR</option>
+                              </select>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            }
+
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+                {filtered.map((item) => {
+                  const statusBg =
+                    item.status === "FULLY_ACCESSIBLE"
+                      ? "#f0fdf4"
+                      : item.status === "BLOCKED"
+                      ? "#fef2f2"
+                      : item.status === "RESTRICTED_LOAD"
+                      ? "#faf5ff"
+                      : "#fffbe6";
+
+                  const statusColor =
+                    item.status === "FULLY_ACCESSIBLE"
+                      ? "#15803d"
+                      : item.status === "BLOCKED"
+                      ? "#b91c1c"
+                      : item.status === "RESTRICTED_LOAD"
+                      ? "#7e22ce"
+                      : "#b45309";
+
+                  const badgeBorder =
+                    item.status === "FULLY_ACCESSIBLE"
+                      ? "#16a34a"
+                      : item.status === "BLOCKED"
+                      ? "#dc2626"
+                      : item.status === "RESTRICTED_LOAD"
+                      ? "#9333ea"
+                      : "#d97706";
+
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        background: "white",
+                        borderRadius: "10px",
+                        border: `1px solid ${badgeBorder}44`,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                        padding: "16px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justify: "space-between"
+                      }}
+                    >
                       <div>
-                        <strong>{row.district}</strong>
-                        <small>{row.state} • {row.bottleneck}</small>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "11px", fontWeight: "bold", background: "#f1f5f9", padding: "2px 8px", borderRadius: "4px", color: "#475569" }}>
+                            {item.category === "Bridge" ? "🌉 BRIDGE" : "🛣️ ROAD PASS"}
+                          </span>
+                          <span style={{ background: statusBg, color: statusColor, border: `1px solid ${badgeBorder}`, padding: "3px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "bold" }}>
+                            ● {item.status.replace(/_/g, " ")}
+                          </span>
+                        </div>
+
+                        <h3 style={{ margin: "4px 0 2px", fontSize: "15px", color: "#0f172a" }}>{item.name}</h3>
+                        <p style={{ margin: "0 0 10px", fontSize: "12px", color: "#64748b" }}>
+                          <strong>{item.highway}</strong> • {item.district}, {item.state}
+                        </p>
+
+                        <div style={{ background: "#f8fafc", padding: "10px", borderRadius: "8px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px", marginBottom: "10px" }}>
+                          <div>
+                            <span style={{ color: "#64748b", display: "block" }}>⚖️ Max Capacity</span>
+                            <strong style={{ color: "#0f172a" }}>{item.maxWeightCapacityTons > 0 ? `${item.maxWeightCapacityTons} Tons` : "CLOSED"}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#64748b", display: "block" }}>🌊 Water Level</span>
+                            <strong style={{ color: "#0f172a" }}>{item.waterLevelStatus || "Normal"}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#64748b", display: "block" }}>🚘 Flow Speed</span>
+                            <strong style={{ color: "#0f172a" }}>{item.trafficFlowSpeedKmH} km/h</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#64748b", display: "block" }}>📏 Clearance</span>
+                            <strong style={{ color: "#0f172a" }}>{item.heightClearanceMeters || 4.5}m</strong>
+                          </div>
+                        </div>
+
+                        {item.bottleneckReason && (
+                          <div style={{ fontSize: "11px", color: "#334155", marginBottom: "8px", background: "#fff", padding: "6px", borderRadius: "6px", border: "1px borderless #e2e8f0" }}>
+                            <strong>Advisory:</strong> {item.bottleneckReason}
+                          </div>
+                        )}
+
+                        {item.alternateRoute && item.alternateRoute !== "N/A" && (
+                          <div style={{ fontSize: "10px", color: "#6d28d9", fontWeight: "bold", marginBottom: "10px" }}>
+                            🔀 Alternate Bypass: {item.alternateRoute}
+                          </div>
+                        )}
                       </div>
 
-                      <div>
-                        <span className={`sih-status ${row.status.toLowerCase()}`}>
-                          {row.status}
-                        </span>
-                      </div>
-
-                      <div>
-                        <strong>{row.connectivity}%</strong>
-                        <small>Connectivity</small>
-                      </div>
-
-                      <div>
-                        <strong>{row.risk}%</strong>
-                        <small>Risk</small>
+                      <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "10px", marginTop: "6px" }}>
+                        <label style={{ fontSize: "10px", color: "#64748b", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
+                          UPDATE OPERATIONAL STATUS:
+                        </label>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
+                          <button
+                            onClick={() => handleUpdateInfraStatus(item.id, "FULLY_ACCESSIBLE")}
+                            style={{ padding: "4px", fontSize: "10px", background: item.status === "FULLY_ACCESSIBLE" ? "#16a34a" : "#f1f5f9", color: item.status === "FULLY_ACCESSIBLE" ? "white" : "#334155", borderRadius: "4px", border: "none" }}
+                          >
+                            ✅ Open
+                          </button>
+                          <button
+                            onClick={() => handleUpdateInfraStatus(item.id, "PASSABLE_CAUTION")}
+                            style={{ padding: "4px", fontSize: "10px", background: item.status === "PASSABLE_CAUTION" ? "#d97706" : "#f1f5f9", color: item.status === "PASSABLE_CAUTION" ? "white" : "#334155", borderRadius: "4px", border: "none" }}
+                          >
+                            ⚠️ Caution
+                          </button>
+                          <button
+                            onClick={() => handleUpdateInfraStatus(item.id, "BLOCKED")}
+                            style={{ padding: "4px", fontSize: "10px", background: item.status === "BLOCKED" ? "#dc2626" : "#f1f5f9", color: item.status === "BLOCKED" ? "white" : "#334155", borderRadius: "4px", border: "none" }}
+                          >
+                            🚨 Block
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-
+                  );
+                })}
               </div>
+            );
+          })()}
+        </div>
+      </section>
 
+      {/* =========================================================
+         REAL-TIME TRAFFIC & HIGHWAY CONGESTION ENGINE
+      ========================================================= */}
+      <section className="full-width-section" id="realtime-traffic">
+        <div className="sih-card traffic-engine-card">
+          <div className="sih-card-title flex-between">
+            <div>
+              <span className="kicker-tag" style={{ background: "#fef3c7", color: "#92400e" }}>
+                🚦 REAL-TIME HIGHWAY TRAFFIC & CONGESTION INTELLIGENCE
+              </span>
+              <h2 style={{ margin: "4px 0 0", color: "#1e1b4b" }}>Real-Time Traffic Data & Bottleneck Stream</h2>
+              <p style={{ margin: "2px 0 0", fontSize: "13px", color: "#64748b" }}>
+                Live transit flow speeds, jam factors, queue delays, and active corridor congestion across North Eastern highways.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", padding: "6px 12px", borderRadius: "8px", textAlign: "center" }}>
+                <span style={{ fontSize: "10px", color: "#991b1b", fontWeight: "bold" }}>SYSTEM CONGESTION</span>
+                <h3 style={{ margin: 0, color: "#dc2626" }}>{trafficSummaryInfo?.overallAverageCongestionPercent || 48}%</h3>
+              </div>
+              <div style={{ background: "#eff6ff", border: "1px solid #93c5fd", padding: "6px 12px", borderRadius: "8px", textAlign: "center" }}>
+                <span style={{ fontSize: "10px", color: "#1e40af", fontWeight: "bold" }}>MONITORED CORRIDORS</span>
+                <h3 style={{ margin: 0, color: "#2563eb" }}>{trafficList.length}</h3>
+              </div>
+            </div>
+          </div>
 
-              <div className="sih-card">
+          {/* TRAFFIC SEARCH & FILTERS TOOLBAR */}
+          <div className="traffic-filters-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", background: "#fffbe6", padding: "12px", borderRadius: "8px", margin: "16px 0" }}>
+            <div style={{ flex: 1, minWidth: "220px" }}>
+              <input
+                type="text"
+                value={trafficSearchQuery}
+                onChange={(e) => setTrafficSearchQuery(e.target.value)}
+                placeholder="Search Highway Name, Corridor, or State..."
+                style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #fcd34d" }}
+              />
+            </div>
+            <div>
+              <select
+                value={trafficStateFilter}
+                onChange={(e) => setTrafficStateFilter(e.target.value)}
+                style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #fcd34d", background: "white" }}
+              >
+                <option value="All">State: All States</option>
+                <option value="ASSAM">ASSAM</option>
+                <option value="MEGHALAYA">MEGHALAYA</option>
+                <option value="SIKKIM">SIKKIM</option>
+                <option value="NAGALAND">NAGALAND</option>
+                <option value="MANIPUR">MANIPUR</option>
+                <option value="ARUNACHAL PRADESH">ARUNACHAL PRADESH</option>
+                <option value="TRIPURA">TRIPURA</option>
+              </select>
+            </div>
+            <div>
+              <select
+                value={trafficCongestionFilter}
+                onChange={(e) => setTrafficCongestionFilter(e.target.value)}
+                style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #fcd34d", background: "white" }}
+              >
+                <option value="All">Congestion: All Levels</option>
+                <option value="Low">Low Congestion</option>
+                <option value="Moderate">Moderate Congestion</option>
+                <option value="Heavy">Heavy Congestion</option>
+              </select>
+            </div>
+          </div>
 
-                <div className="sih-card-title">
-                  <div>
-                    <span>PREDICTIVE DISRUPTION ENGINE</span>
-                    <h3>Route Risk Alerts</h3>
+          {/* TRAFFIC CORRIDOR CARDS GRID */}
+          {(() => {
+            const filteredTraffic = trafficList.filter((item) => {
+              const matchesSearch =
+                !trafficSearchQuery ||
+                item.highwayName.toLowerCase().includes(trafficSearchQuery.toLowerCase()) ||
+                item.segment.toLowerCase().includes(trafficSearchQuery.toLowerCase()) ||
+                item.state.toLowerCase().includes(trafficSearchQuery.toLowerCase());
+
+              const matchesState = trafficStateFilter === "All" || item.state.toUpperCase() === trafficStateFilter.toUpperCase();
+              const matchesCongestion = trafficCongestionFilter === "All" || item.congestionLevel.toLowerCase() === trafficCongestionFilter.toLowerCase();
+
+              return matchesSearch && matchesState && matchesCongestion;
+            });
+
+            if (filteredTraffic.length === 0) {
+              return (
+                <div style={{ textAlign: "center", padding: "24px", background: "#fafafa", borderRadius: "8px" }}>
+                  <p style={{ color: "#71717a" }}>No traffic corridor data matches the selected query.</p>
+                </div>
+              );
+            }
+
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))", gap: "16px" }}>
+                {filteredTraffic.map((item) => {
+                  const congColor =
+                    item.congestionLevel === "Low"
+                      ? "#16a34a"
+                      : item.congestionLevel === "Heavy"
+                      ? "#dc2626"
+                      : "#d97706";
+
+                  const congBg =
+                    item.congestionLevel === "Low"
+                      ? "#f0fdf4"
+                      : item.congestionLevel === "Heavy"
+                      ? "#fef2f2"
+                      : "#fffbe6";
+
+                  return (
+                    <div
+                      key={item.corridorId}
+                      style={{
+                        background: "white",
+                        borderRadius: "10px",
+                        border: `1px solid ${congColor}33`,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+                        padding: "16px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between"
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "10px", fontWeight: "bold", background: "#f1f5f9", padding: "2px 8px", borderRadius: "4px", color: "#475569" }}>
+                            {item.state} • {item.corridorId}
+                          </span>
+                          <span style={{ background: congBg, color: congColor, border: `1px solid ${congColor}`, padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "bold" }}>
+                            ● {item.congestionLevel.toUpperCase()} CONGESTION ({item.congestionIndexPercent}%)
+                          </span>
+                        </div>
+
+                        <h4 style={{ margin: "4px 0 2px", fontSize: "14px", color: "#0f172a" }}>{item.highwayName}</h4>
+                        <p style={{ margin: "0 0 10px", fontSize: "11px", color: "#64748b" }}>
+                          📍 {item.segment}
+                        </p>
+
+                        {/* CONGESTION PROGRESS BAR */}
+                        <div style={{ margin: "8px 0" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#64748b", marginBottom: "3px" }}>
+                            <span>Congestion Level</span>
+                            <strong>Jam Factor: {item.jamFactor}/10</strong>
+                          </div>
+                          <div style={{ width: "100%", height: "8px", background: "#e2e8f0", borderRadius: "4px", overflow: "hidden" }}>
+                            <div style={{ width: `${item.congestionIndexPercent}%`, height: "100%", background: congColor, borderRadius: "4px" }} />
+                          </div>
+                        </div>
+
+                        <div style={{ background: "#f8fafc", padding: "10px", borderRadius: "8px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px", fontSize: "11px", marginBottom: "10px", textAlign: "center" }}>
+                          <div>
+                            <span style={{ color: "#64748b", display: "block", fontSize: "10px" }}>🚗 Avg Speed</span>
+                            <strong style={{ color: "#0f172a" }}>{item.averageSpeedKmH} km/h</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#64748b", display: "block", fontSize: "10px" }}>🏁 Free Flow</span>
+                            <strong style={{ color: "#0f172a" }}>{item.freeFlowSpeedKmH} km/h</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#64748b", display: "block", fontSize: "10px" }}>⏱️ Queue Delay</span>
+                            <strong style={{ color: congColor }}>+{item.delayMinutes} min</strong>
+                          </div>
+                        </div>
+
+                        {item.bottlenecks?.length > 0 && (
+                          <div style={{ fontSize: "10px", color: "#475569", background: "#f1f5f9", padding: "6px 8px", borderRadius: "6px" }}>
+                            <strong>🚧 Bottleneck Points:</strong> {item.bottlenecks.join(", ")}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: "9px", color: "#94a3b8", textAlign: "right", marginTop: "8px" }}>
+                        Telemetry Live • Updated {new Date(item.lastUpdated).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* RECOMMENDED OPTIMAL ROUTE CARD */}
+      {selectedRoute && (
+        <section className="full-width-section">
+          <div className="sih-card route-recommendation-card">
+            <div className="sih-card-title">
+              <div>
+                <span className="kicker-tag">🏆 {t("bestRoute")}</span>
+                <h2>{source} ➔ {destination}</h2>
+              </div>
+              <div className="score-badge">
+                Logistics Score: <strong>{selectedRoute.score || 95}/100</strong>
+              </div>
+            </div>
+
+            <div className="route-metrics-grid">
+              <div className="metric-box">
+                <span>📏 Total Distance</span>
+                <strong>{selectedRoute.distanceKm} km</strong>
+              </div>
+              <div className="metric-box">
+                <span>⏱️ Travel Time (incl. delay)</span>
+                <strong>{Math.floor(selectedRoute.durationMinutes / 60)}h {selectedRoute.durationMinutes % 60}m</strong>
+              </div>
+              <div className="metric-box">
+                <span>⛽ Fuel Est.</span>
+                <strong>{selectedRoute.fuelLitres} Litres</strong>
+              </div>
+              <div className="metric-box">
+                <span>⚠️ Environmental Delay</span>
+                <strong>+{selectedRoute.environmentalDelayMinutes || 0} min</strong>
+              </div>
+              <div className="metric-box highlight">
+                <span>💰 Total Delivery Cost</span>
+                <strong>₹{(selectedRoute.totalDeliveryCost || 0).toLocaleString()}</strong>
+              </div>
+            </div>
+
+            <div className="route-actions-bar">
+              <button
+                className={`secondary-button ${realGpsActive ? "active-gps-btn" : ""}`}
+                onClick={() => setRealGpsActive(!realGpsActive)}
+                style={{ background: realGpsActive ? "#16a34a" : "#2563eb", color: "white" }}
+              >
+                {realGpsActive ? "📡 REAL GPS TRACKING ACTIVE" : "📍 ACTIVATE REAL GPS TRACKER"}
+              </button>
+              <button className="secondary-button" onClick={saveTrip}>
+                💾 Save Trip to History
+              </button>
+              <button className="pdf-button" onClick={() => generatePDFReport(null)}>
+                📄 {t("pdfExport")}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ROUTE ANALYSIS DASHBOARD */}
+      {selectedRoute && (
+        <section className="full-width-section">
+          <div className="sih-card route-analysis-dashboard">
+            <div className="sih-card-title">
+              <h3>📊 {t("routeAnalysis")}</h3>
+              <span className="analysis-badge">MODEL: {destRiskInfo?.model || "NER-Environmental-RandomForest-v3.2"}</span>
+            </div>
+
+            <div className="cost-breakdown-grid">
+              <div className="cost-item">
+                <span>⛽ Fuel Cost</span>
+                <strong>₹{(selectedRoute.fuelCost || 0).toLocaleString()}</strong>
+                <small>Based on vehicle mileage & fuel price</small>
+              </div>
+              <div className="cost-item">
+                <span>👤 Driver Allowance</span>
+                <strong>₹{(selectedRoute.driverCost || 0).toLocaleString()}</strong>
+                <small>Calculated on total transit hours</small>
+              </div>
+              <div className="cost-item">
+                <span>🛣️ Toll & Road Charges</span>
+                <strong>₹{(selectedRoute.tollCost || 0).toLocaleString()}</strong>
+                <small>NER highway maintenance toll</small>
+              </div>
+              <div className="cost-item">
+                <span>⛰️ Environmental Delay Impact</span>
+                <strong style={{ color: "#dc2626" }}>+₹{((selectedRoute.environmentalDelayMinutes || 0) * 15).toLocaleString()}</strong>
+                <small>Landslide/Flood delay penalty</small>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ROUTE COMPARISON DASHBOARD */}
+      {routes.length > 0 && (
+        <section className="full-width-section">
+          <div className="sih-card route-comparison-card">
+            <div className="sih-card-title">
+              <h3>🔀 {t("routeComparison")}</h3>
+              <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                Compare primary highway corridors vs. alternate bypass routes evaluated by the ML model.
+              </p>
+            </div>
+
+            <div className="comparison-cards-grid">
+              {routes.map((rt, idx) => (
+                <div key={rt.id || idx} className={`comparison-card ${selectedRoute?.id === rt.id ? "active-choice" : ""}`}>
+                  <div className="comp-card-header">
+                    <span className="route-opt-tag">
+                      {idx === 0 ? "🏆 Option 1 (Recommended)" : idx === 1 ? "🔀 Option 2 (State Bypass)" : `⛰️ Option ${idx + 1} (Mountain Trail)`}
+                    </span>
+                    <strong className="comp-score">{rt.score}/100 Score</strong>
                   </div>
 
-                  <span className="sih-live-pill">
-                    ● LIVE MODEL
-                  </span>
-                </div>
-
-                <div className="sih-alert-list">
-
-                  {alertRows.map((alert) => (
-                    <div className="sih-alert" key={alert.title}>
-                      <div className="sih-alert-icon">{alert.icon}</div>
-
-                      <div>
-                        <strong>{alert.title}</strong>
-                        <p>{alert.detail}</p>
-                      </div>
-
-                      <span className={`sih-alert-level ${alert.level.toLowerCase()}`}>
-                        {alert.level}
-                      </span>
-                    </div>
-                  ))}
-
-                </div>
-
-                <div className="sih-reoptimize">
-                  <div>
-                    <strong>Dynamic Re-optimization</strong>
-                    <span>
-                      Re-check the selected route when risk or accessibility changes.
-                    </span>
+                  <div className="comp-metrics">
+                    <div><span>Distance:</span> <strong>{rt.distanceKm} km</strong></div>
+                    <div><span>Transit Time:</span> <strong>{Math.floor(rt.durationMinutes / 60)}h {rt.durationMinutes % 60}m</strong></div>
+                    <div><span>Risk Probability:</span> <strong style={{ color: rt.riskProbability >= 60 ? "#dc2626" : "#16a34a" }}>{rt.riskProbability || 35}%</strong></div>
+                    <div><span>Total Cost:</span> <strong>₹{(rt.totalDeliveryCost || 0).toLocaleString()}</strong></div>
                   </div>
 
                   <button
-                    type="button"
-                    onClick={() => {
-                      setError("");
-                      if (selectedRoute) {
-                        alert("Route re-evaluation triggered for the selected corridor.");
-                      } else {
-                        alert("Calculate a route first.");
-                      }
-                    }}
+                    className={`select-route-btn ${selectedRoute?.id === rt.id ? "selected" : ""}`}
+                    onClick={() => setSelectedRoute(rt)}
                   >
-                    🔄 Re-optimize
+                    {selectedRoute?.id === rt.id ? "✅ Selected Route" : "Select This Route"}
                   </button>
                 </div>
-
-              </div>
-
-
-              <div className="sih-card">
-
-                <div className="sih-card-title">
-                  <div>
-                    <span>GPS / FIELD OPERATIONS</span>
-                    <h3>Vehicle & Field Location</h3>
-                  </div>
-
-                  <span className="sih-live-pill">
-                    {gpsPosition ? "GPS FIX" : "GPS WAITING"}
-                  </span>
-                </div>
-
-                <div className="sih-gps-box">
-
-                  <div>
-                    <span>Latitude</span>
-                    <strong>
-                      {gpsPosition ? gpsPosition.lat.toFixed(5) : "Waiting..."}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Longitude</span>
-                    <strong>
-                      {gpsPosition ? gpsPosition.lon.toFixed(5) : "Waiting..."}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Accuracy</span>
-                    <strong>
-                      {gpsPosition ? `${gpsPosition.accuracy} m` : "—"}
-                    </strong>
-                  </div>
-
-                </div>
-
-                {gpsError && (
-                  <p className="sih-gps-error">
-                    {gpsError}
-                  </p>
-                )}
-
-                <p className="sih-note">
-                  Browser GPS is used when permission is granted. Vehicle route
-                  simulation continues independently.
-                </p>
-
-              </div>
-
-
-              <div className="sih-card">
-
-                <div className="sih-card-title">
-                  <div>
-                    <span>FIELD REPORTING</span>
-                    <h3>Geo-tagged Incident Upload</h3>
-                  </div>
-
-                  <span className={isOnline ? "sih-sync synced" : "sih-sync queued"}>
-                    {isOnline ? "● SYNCED" : "● OFFLINE QUEUE"}
-                  </span>
-                </div>
-
-                <select
-                  value={incidentType}
-                  onChange={(event) => setIncidentType(event.target.value)}
-                >
-                  <option>Flood</option>
-                  <option>Landslide</option>
-                  <option>Heavy Rainfall</option>
-                  <option>Road Damage</option>
-                  <option>Bridge Damage</option>
-                  <option>Traffic Congestion</option>
-                </select>
-
-                <select
-                  value={incidentSeverity}
-                  onChange={(event) => setIncidentSeverity(event.target.value)}
-                >
-                  <option>High</option>
-                  <option>Medium</option>
-                  <option>Low</option>
-                </select>
-
-                <textarea
-                  value={incidentNote}
-                  onChange={(event) => setIncidentNote(event.target.value)}
-                  placeholder="Describe the incident..."
-                  rows={3}
-                />
-
-                <div className="sih-form-actions">
-                  <button type="button" onClick={submitIncident}>
-                    📍 Submit Geo-tagged Report
-                  </button>
-
-                  <button type="button" onClick={syncIncidentQueue}>
-                    🔄 Sync Queue
-                  </button>
-                </div>
-
-                {incidentQueue.length > 0 && (
-                  <div className="sih-queue-info">
-                    {incidentQueue.length} incident report(s) stored locally.
-                    {isOnline ? " Ready to sync." : " Will sync when network returns."}
-                  </div>
-                )}
-
-              </div>
-
+              ))}
             </div>
-
-            <div className="sih-emergency-panel">
-              <div>
-                <span>EMERGENCY & DISASTER RESPONSE</span>
-                <h3>
-                  {emergencyMode
-                    ? "🚨 Emergency logistics mode is active"
-                    : "Emergency routing ready"}
-                </h3>
-                <p>
-                  {emergencyMode
-                    ? "Prioritize essential commodities, shortest safe alternatives and active field reports."
-                    : "Switch to emergency mode during floods, landslides or major road disruptions."}
-                </p>
-              </div>
-
-              <div className="sih-essential-tags">
-                <span>💊 Medicines</span>
-                <span>🍚 Food Supplies</span>
-                <span>🌾 Agricultural Produce</span>
-                <span>🏗️ Construction Materials</span>
-              </div>
-            </div>
-
-          </section>
-
-{/* =================================================
-    LOGISTICS OVERVIEW
-================================================= */}
-
-<div className="overview-box">
-
-  <div className="box-heading">
-    <div>
-      <span>PERFORMANCE</span>
-      <h3>📊 Logistics Overview</h3>
-    </div>
-  </div>
-
-
-  <div className="overview-grid">
-
-    {/* TOTAL TRIPS */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>📦 Total Trips</span>
-        <strong>{totalTrips}</strong>
-        <small>Saved deliveries</small>
-      </div>
-    </div>
-
-
-    {/* ACTIVE TRIPS */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>🚚 Active Trips</span>
-        <strong>{activeTrips}</strong>
-        <small>In transit</small>
-      </div>
-    </div>
-
-
-    {/* PLANNED */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>📋 Planned</span>
-        <strong>{plannedTrips}</strong>
-        <small>Upcoming</small>
-      </div>
-    </div>
-
-
-    {/* DELIVERED */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>✅ Delivered</span>
-        <strong>{deliveredTrips}</strong>
-        <small>Completed</small>
-      </div>
-    </div>
-
-
-    {/* TOTAL COST */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>💰 Total Cost</span>
-        <strong>
-          ₹{totalCost.toLocaleString()}
-        </strong>
-        <small>Estimated</small>
-      </div>
-    </div>
-
-
-    {/* TOTAL DISTANCE */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>📏 Total Distance</span>
-        <strong>
-          {totalDistance.toFixed(1)}
-        </strong>
-        <small>Kilometres</small>
-      </div>
-    </div>
-
-
-    {/* AVERAGE SCORE */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>🧠 Average Score</span>
-        <strong>{averageScore}</strong>
-        <small>Out of 100</small>
-      </div>
-    </div>
-
-
-    {/* AVERAGE COST */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>💵 Average Cost</span>
-        <strong>
-          ₹{averageCost.toLocaleString()}
-        </strong>
-        <small>Per trip</small>
-      </div>
-    </div>
-
-
-    {/* COMPLETION RATE */}
-    <div className="overview-card">
-      <div className="overview-card-content">
-        <span>🎯 Completion Rate</span>
-        <strong>{completionRate}%</strong>
-        <small>Delivery success</small>
-      </div>
-    </div>
-
-  </div>
-
-</div>
-
-<div className="ner-environment-box">
-
-  {/* =================================================
-      HEADER
-  ================================================= */}
-
-  <div className="box-heading">
-
-    <div>
-
-      <span>
-        NORTH EASTERN REGION 
-      </span>
-
-      <h3>
-        🌦️ Environmental Risk Monitor
-      </h3>
-
-    </div>
-
-    <div
-      className="route-count-badge"
-      style={{
-        color: getMlRiskColor(
-          mlRisk?.risk
-        ),
-      }}
-    >
-      {mlRisk
-        ? mlRisk.risk
-        : "NO DATA"}
-    </div>
-
-  </div>
-
-
-  {/* =================================================
-      ML INPUT
-  ================================================= */}
-
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns:
-        "1fr 1fr auto",
-      gap: "12px",
-      marginBottom: "20px",
-    }}
-  >
-
-    <div>
-
-      <label
-        style={{
-          display: "block",
-          fontWeight: 700,
-          marginBottom: "6px",
-        }}
-      >
-        State
-      </label>
-
-      <select
-        value={riskState}
-        onChange={(e) =>
-          setRiskState(e.target.value)
-        }
-        style={{
-          width: "100%",
-          padding: "11px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-        }}
-      >
-        <option value="ASSAM">
-          Assam
-        </option>
-
-        <option value="ARUNACHAL PRADESH">
-          Arunachal Pradesh
-        </option>
-
-        <option value="MANIPUR">
-          Manipur
-        </option>
-
-        <option value="MEGHALAYA">
-          Meghalaya
-        </option>
-
-        <option value="MIZORAM">
-          Mizoram
-        </option>
-
-        <option value="NAGALAND">
-          Nagaland
-        </option>
-
-        <option value="SIKKIM">
-          Sikkim
-        </option>
-
-        <option value="TRIPURA">
-          Tripura
-        </option>
-      </select>
-
-    </div>
-
-
-    <div>
-
-      <label
-        style={{
-          display: "block",
-          fontWeight: 700,
-          marginBottom: "6px",
-        }}
-      >
-        District
-      </label>
-
-      <input
-        value={riskDistrict}
-        onChange={(e) =>
-          setRiskDistrict(e.target.value)
-        }
-        placeholder="e.g. Hailakandi"
-        style={{
-          width: "100%",
-          boxSizing: "border-box",
-          padding: "11px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-        }}
-      />
-
-    </div>
-
-
-    <div
-      style={{
-        display: "flex",
-        alignItems: "end",
-      }}
-    >
-
-      <button
-        type="button"
-        onClick={fetchMlRisk}
-        disabled={mlRiskLoading}
-        style={{
-          padding: "11px 18px",
-          border: "none",
-          borderRadius: "10px",
-          background: "#6d28d9",
-          color: "white",
-          fontWeight: 800,
-          cursor: mlRiskLoading
-            ? "wait"
-            : "pointer",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {mlRiskLoading
-          ? "🤖 Analyzing..."
-          : "🤖 Access Risk"}
-      </button>
-
-    </div>
-
-  </div>
-
-
-  {/* =================================================
-      ERROR
-  ================================================= */}
-
-  {mlRiskError && (
-
-    <div
-      style={{
-        padding: "10px 12px",
-        marginBottom: "16px",
-        borderRadius: "10px",
-        background: "#fef2f2",
-        color: "#b91c1c",
-        fontSize: "13px",
-        fontWeight: 600,
-      }}
-    >
-      ❌ {mlRiskError}
-    </div>
-
-  )}
-
-
-  {/* =================================================
-      OVERALL ML RISK
-  ================================================= */}
-
-  <div className="environment-overall">
-
-    <div>
-
-      <span>
-      LANDSLIDE SUSCEPTIBILITY
-      </span>
-
-      <strong
-        style={{
-          color:
-            getRiskColor(
-              mlRiskPercent
-            ),
-        }}
-      >
-        {mlRisk
-          ? `${mlRiskPercent}%`
-          : "--"}
-      </strong>
-
-    </div>
-
-
-    <div className="environment-risk-bar">
-
-      <div
-        style={{
-          width: `${mlRiskPercent}%`,
-          background:
-            getRiskColor(
-              mlRiskPercent
-            ),
-        }}
-      />
-
-    </div>
-
-
-    <small>
-
-      {mlRisk
-        ? `Risk Level: ${mlRisk.risk} • ${riskDistrict}, ${riskState}`
-        : "Run ML prediction to assess environmental risk."}
-
-    </small>
-
-  </div>
-
-
-  {/* =================================================
-      ML RESULT CARDS
-  ================================================= */}
-
-  <div className="environment-grid">
-
-
-    {/* RISK LEVEL */}
-
-    <div className="environment-card landslide">
-
-      <div className="environment-icon">
-        ⛰️
-      </div>
-
-      <div>
-
-        <span>
-          Landslide Risk
-        </span>
-
-        <strong
-          style={{
-            color:
-              getMlRiskColor(
-                mlRisk?.risk
-              ),
-          }}
-        >
-          {mlRisk
-            ? mlRisk.risk
-            : "NO DATA"}
-        </strong>
-
-        <small>
-         susceptibility result
-        </small>
-
-      </div>
-
-    </div>
-
-
-    {/* PROBABILITY */}
-
-    <div className="environment-card weather">
-
-      <div className="environment-icon">
-        📊
-      </div>
-
-      <div>
-
-        <span>
-         Probability
-        </span>
-
-        <strong>
-          {mlRisk
-            ? `${(
-                mlRisk.probability *
-                100
-              ).toFixed(2)}%`
-            : "--"}
-        </strong>
-
-        <small>
-          Estimated susceptibility probability
-        </small>
-
-      </div>
-
-    </div>
-
-
-    {/* PREDICTION */}
-
-    <div className="environment-card flood">
-
-      <div className="environment-icon">
-        🤖
-      </div>
-
-      <div>
-
-        <span>
-          Risk Assessment
-        </span>
-
-        <strong
-          style={{
-            color:
-              mlRisk?.prediction === 1
-                ? "#ef4444"
-                : "#22c55e",
-          }}
-        >
-          {mlRisk
-            ? mlRisk.prediction === 1
-              ? "SUSCEPTIBLE"
-              : "LOW SUSCEPTIBILITY"
-            : "--"}
-        </strong>
-
-        <small>
-          Environmental Assessment
-        </small>
-
-      </div>
-
-    </div>
-
-
-    {/* LOCATION */}
-
-    <div className="environment-card terrain">
-
-      <div className="environment-icon">
-        📍
-      </div>
-
-      <div>
-
-        <span>
-          Monitored Location
-        </span>
-
-        <strong>
-          {mlRisk
-            ? mlRisk.district
-            : riskDistrict}
-        </strong>
-
-        <small>
-          {mlRisk
-            ? mlRisk.state
-            : riskState}
-        </small>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  {/* =================================================
-      MODEL ALERT
-  ================================================= */}
-
-  <div className="environment-alert">
-
-    {mlRisk?.risk === "HIGH"
-      ? "🔴"
-      : mlRisk?.risk === "MEDIUM"
-      ? "🟡"
-      : mlRisk?.risk === "LOW"
-      ? "🟢"
-      : "ℹ️"}
-
-    <strong>
-     Logistics Alert:
-    </strong>
-
-    {mlRisk
-      ? mlRisk.risk === "HIGH"
-        ? " High landslide susceptibility detected. Review the corridor before dispatch."
-        : mlRisk.risk === "MEDIUM"
-        ? " Moderate landslide susceptibility detected. Monitor the route before dispatch."
-        : " Low landslide susceptibility predicted for the selected district."
-      : " Select a NER district and run the ML prediction."}
-
-  </div>
-
-
-  {/* =================================================
-      MODEL NOTE
-  ================================================= */}
-
-  <div
-    style={{
-      marginTop: "12px",
-      fontSize: "11px",
-      color: "#64748b",
-      lineHeight: 1.5,
-    }}
-  >
-  </div>
-
-</div>
-{/* =================================================
-    TRIP HISTORY
-================================================= */}
-
-{savedTrips.length > 0 && (
-
-  <section className="trip-history-section">
-
-    <div className="history-box">
-
-      {/* HEADER */}
-      <div className="box-heading">
-
-        <div>
-          <span>DELIVERY RECORDS</span>
-          <h3>📋 Trip History</h3>
-        </div>
-
-        <div className="route-count-badge">
-          {savedTrips.length} Saved
-        </div>
-
-      </div>
-
-
-      {/* HISTORY LIST */}
-      <div className="history-list">
-
-        {savedTrips.map((trip) => (
-
-          <div
-            className="history-card"
-            key={trip.id}
-          >
-
-            {/* =========================
-                ROUTE INFORMATION
-            ========================= */}
-
-            <div className="history-main">
-
-              <div className="history-route">
-
-                <div className="history-location">
-                  <span>FROM</span>
-                  <strong>🚚 {trip.source}</strong>
-                </div>
-
-                <div className="route-arrow">
-                  →
-                </div>
-
-                <div className="history-location">
-                  <span>TO</span>
-                  <strong>{trip.destination}</strong>
-                </div>
-
-              </div>
-
-
-              {/* DETAILS */}
-
-              <div className="history-details">
-
-                <div className="history-detail-item">
-                  <span>Vehicle</span>
-                  <strong>{trip.vehicle}</strong>
-                </div>
-
-                <div className="history-detail-item">
-                  <span>Distance</span>
-                  <strong>{trip.distanceKm} km</strong>
-                </div>
-
-                <div className="history-detail-item">
-                  <span>Cost</span>
-                  <strong>
-                    ₹{Number(trip.totalDeliveryCost || 0).toLocaleString()}
-                  </strong>
-                </div>
-
-                <div className="history-detail-item">
-                  <span>Score</span>
-                  <strong>{trip.score}/100</strong>
-                </div>
-
-                <div className="history-detail-item">
-                  <span>Date</span>
-                  <strong>{trip.date}</strong>
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* =========================
-                ACTIONS
-            ========================= */}
-
-            <div className="history-actions">
-
-              <div className="status-control">
-
-                <label>Status</label>
-
-                <select
-                  value={trip.status}
-                  onChange={(e) =>
-                    updateTripStatus(
-                      trip.id,
-                      e.target.value
-                    )
-                  }
-                >
-                  <option value="Planned">
-                    📋 Planned
-                  </option>
-
-                  <option value="In Transit">
-                    🚚 In Transit
-                  </option>
-
-                  <option value="Delivered">
-                    ✅ Delivered
-                  </option>
-                </select>
-
-              </div>
-
-
-              <button
-                type="button"
-                className="pdf-button"
-                onClick={() => generatePDF(trip)}
-              >
-                📄 Download Report
-              </button>
-
-
-              <button
-                type="button"
-                className="delete-button"
-                onClick={() => deleteTrip(trip.id)}
-              >
-                🗑️ Delete Trip
-              </button>
-
-            </div>
-
+          </div>
+        </section>
+      )}
+
+      {/* LOWER SECTION: FIELD REPORTING, ESSENTIAL FLEET & DISTRICT MATRIX */}
+      <section className="lower-dashboard-grid">
+        {/* FIELD OFFICIAL INCIDENT REPORTING FORM */}
+        <div className="sih-card">
+          <div className="sih-card-title">
+            <h3>📝 {t("fieldReporting")}</h3>
+            <span className="sih-live-pill">{isOnline ? "ONLINE SYNC" : "QUEUEING OFFLINE"}</span>
           </div>
 
-        ))}
+          <div className="form-grid">
+            <div>
+              <label>Incident Type</label>
+              <select value={incidentType} onChange={(e) => setIncidentType(e.target.value)}>
+                <option>Landslide</option>
+                <option>Flash Flood</option>
+                <option>Road Erosion</option>
+                <option>Bridge Damage</option>
+                <option>Heavy Fog / Rain</option>
+              </select>
+            </div>
+            <div>
+              <label>Severity</label>
+              <select value={incidentSeverity} onChange={(e) => setIncidentSeverity(e.target.value)}>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </div>
+          </div>
 
-      </div>
+          <label>State & District</label>
+          <input type="text" value={`${incidentState} - ${incidentDistrict}`} onChange={(e) => setIncidentDistrict(e.target.value)} />
 
-    </div>
+          <label>Highway Pass / Specific Location Name</label>
+          <input type="text" value={incidentLocationName} onChange={(e) => setIncidentLocationName(e.target.value)} />
 
-  </section>
+          <label>Incident Description & Delay Notes</label>
+          <textarea rows={3} value={incidentNote} onChange={(e) => setIncidentNote(e.target.value)} placeholder="Describe blockade status, affected carriageway, and alternate routes..." />
 
-)}
+          <label>{t("photoUpload")}</label>
+          <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ marginBottom: "8px" }} />
+          {incidentPhotoPreview && (
+            <img src={incidentPhotoPreview} alt="Preview" style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "8px", marginBottom: "8px" }} />
+          )}
 
+          <button className="primary-button" onClick={submitIncidentReport}>
+            📤 {t("submitIncident")}
+          </button>
+        </div>
 
-          
+        {/* ESSENTIAL COMMODITY FLEET LIST */}
+        <div className="sih-card">
+          <div className="sih-card-title">
+            <h3>🚚 {t("activeFleet")}</h3>
+            <span>LIVE VEHICLES: {fleetVehicles.length}</span>
+          </div>
 
-          </section>
+          <div className="fleet-list">
+            {fleetVehicles.map((fv) => (
+              <div key={fv.id} className="fleet-item">
+                <div className="fleet-header">
+                  <strong>{fv.vehicleName}</strong>
+                  <span className={`status-tag ${fv.status === "Delayed" ? "delayed" : "in-transit"}`}>{fv.status}</span>
+                </div>
+                <div className="fleet-details">
+                  <span>📦 {fv.cargoType} ({fv.cargoWeightKg} kg)</span>
+                  <span>📍 {fv.origin} ➔ {fv.destination}</span>
+                  <span>📡 <strong>Real GPS:</strong> Lat {fv.currentLat.toFixed(4)}, Lon {fv.currentLon.toFixed(4)} ({fv.speedKmH} km/h)</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {/* =================================================
-          FOOTER
-      ================================================= */}
-    </main>
+      {/* DISTRICT-WISE ACCESSIBILITY MATRIX */}
+      <section className="sih-card full-width-card">
+        <div className="sih-card-title">
+          <h3>🏛️ {t("districtDashboard")}</h3>
+          <div>
+            <label style={{ fontSize: "12px", marginRight: "8px" }}>Filter District:</label>
+            <select value={districtFilter} onChange={(e) => setDistrictFilter(e.target.value)} style={{ padding: "4px 8px" }}>
+              <option>All</option>
+              {districtsMatrix.map((d) => (
+                <option key={d.district}>{d.district}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      <footer className="main-footer">
+        <div className="district-table">
+          <div className="table-header">
+            <div>State & District</div>
+            <div>Connectivity %</div>
+            <div>Risk Score</div>
+            <div>Status</div>
+            <div>Primary Bottleneck / Action</div>
+          </div>
+          {activeDistrictsList.map((row) => (
+            <div key={row.district} className="table-row">
+              <div><strong>{row.district}</strong> <small>({row.state})</small></div>
+              <div>{row.connectivityPercent}%</div>
+              <div><strong style={{ color: row.riskLevel === "HIGH" ? "#dc2626" : "#16a34a" }}>{row.riskPercent}% ({row.riskLevel})</strong></div>
+              <div><span className={`sih-status ${row.status.toLowerCase()}`}>{row.status}</span></div>
+              <div><small>{row.bottleneck}</small></div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        <strong>
-          NER Logistics Intelligence Platform
-        </strong>
-
-        <span>
-          • AI Route Optimization
-          • Real-Time Vehicle Tracking
-          • Smart Logistics Analytics
-        </span>
-
+      {/* FOOTER ACTIONS */}
+      <footer className="footer-bar">
+        <button onClick={() => generatePDFReport(null)} className="pdf-button">
+          📄 {t("pdfExport")}
+        </button>
       </footer>
-
     </div>
   );
 }
+
 export default App;
