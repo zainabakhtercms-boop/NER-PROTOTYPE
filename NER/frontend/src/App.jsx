@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -66,7 +66,15 @@ const TRANSLATIONS = {
     filterState: "Filter State",
     filterStatus: "Filter Status",
     searchInfra: "Search Bridge or Highway Corridor...",
-    addInfrastructure: "Register New Bridge / Road Corridor"
+    addInfrastructure: "Register New Bridge / Road Corridor",
+    notifTitle: "Multilingual Notification & Alert Service",
+    notifSubtitle: "Real-time voice & regional alerts across NER corridors",
+    notifBell: "Live Alerts",
+    markAllRead: "Mark All Read",
+    voiceAlerts: "Voice Alert",
+    soundAlerts: "Chime",
+    testAlert: "Broadcast Alert",
+    noAlerts: "All corridors clear. No active alerts."
   },
   Hindi: {
     brandTitle: "पूर्वात्तर रसद बुद्धिमत्ता मंच (NER Logistics)",
@@ -112,7 +120,15 @@ const TRANSLATIONS = {
     filterState: "राज्य फ़िल्टर",
     filterStatus: "स्थिति फ़िल्टर",
     searchInfra: "पुल या राजमार्ग कॉरिडोर खोजें...",
-    addInfrastructure: "नया पुल/सड़क पंजीकृत करें"
+    addInfrastructure: "नया पुल/सड़क पंजीकृत करें",
+    notifTitle: "बहुभाषी अधिसूचना एवं चेतावनी सेवा",
+    notifSubtitle: "पूर्वोत्तर गलियारों में वास्तविक समय ध्वनि व क्षेत्रीय चेतावनियां",
+    notifBell: "लाइव चेतावनियां",
+    markAllRead: "सभी पढ़े हुए चिन्हित करें",
+    voiceAlerts: "ध्वनि चेतावनी",
+    soundAlerts: "घंटी ध्वनि",
+    testAlert: "चेतावनी प्रसारित करें",
+    noAlerts: "सभी मार्ग सुगम हैं। कोई सक्रिय चेतावनी नहीं।"
   },
   Assamese: {
     brandTitle: "উত্তৰ-পূৰ্বাঞ্চল লজিষ্টিকছ বুদ্ধিমত্তা মঞ্চ",
@@ -158,7 +174,15 @@ const TRANSLATIONS = {
     filterState: "ৰাজ্য বাচনি",
     filterStatus: "স্থিতি বাচনি",
     searchInfra: "দলং বা ৰাজপথ বিচাৰক...",
-    addInfrastructure: "নতুন দলং বা পথ অন্তৰ্ভুক্ত কৰক"
+    addInfrastructure: "নতুন দলং বা পথ অন্তৰ্ভুক্ত কৰক",
+    notifTitle: "বহুভাষিক জাননী আৰু সতৰ্কবাণী সেৱা",
+    notifSubtitle: "উত্তৰ-পূব কৰিড'ৰত লাইভ শব্দ আৰু আঞ্চলিক সতৰ্কতা",
+    notifBell: "লাইভ সতৰ্কবাণীসমূহ",
+    markAllRead: "সকলো পঢ়া হ'ল",
+    voiceAlerts: "কণ্ঠস্বৰ সতৰ্কতা",
+    soundAlerts: "শব্দ সংকেত",
+    testAlert: "সতৰ্কবাণী প্ৰচাৰ কৰক",
+    noAlerts: "সকলো পথ সুগম। কোনো সতৰ্কবাণী নাই।"
   },
   Bengali: {
     brandTitle: "উত্তর-পূর্বাঞ্চল লজিস্টিকস ইন্টেলিজেন্স প্ল্যাটফর্ম",
@@ -204,9 +228,140 @@ const TRANSLATIONS = {
     filterState: "রাজ্য ফিল্টার",
     filterStatus: "স্ট্যাটাস ফিল্টার",
     searchInfra: "সেতু বা হাইওয়ে খুঁজুন...",
-    addInfrastructure: "নতুন সেতু বা সড়ক নথিভুক্ত করুন"
+    addInfrastructure: "নতুন সেতু বা সড়ক নথিভুক্ত করুন",
+    notifTitle: "বহুভাষিক বিজ্ঞপ্তি ও সতর্কতা পরিষেবা",
+    notifSubtitle: "উত্তর-পূর্ব করিডোরে রিয়েল-টাইম অডিও ও আঞ্চলিক সতর্কতা",
+    notifBell: "লাইভ সতর্কতা",
+    markAllRead: "সব পঠিত চিহ্নিত করুন",
+    voiceAlerts: "ভয়েস অ্যালার্ট",
+    soundAlerts: "সাউন্ড সংকেত",
+    testAlert: "সতর্কতা সম্প্রচার করুন",
+    noAlerts: "সব করিডোর সচল। কোনো সক্রিয় সতর্কতা নেই।"
   }
 };
+
+/* =========================================================
+   MULTILINGUAL NOTIFICATION & ALERT AUDIO/VOICE ENGINE
+========================================================= */
+const playNotificationSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.35);
+  } catch (e) {}
+};
+
+const speakAlertText = (text, lang) => {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const langCodes = {
+      English: "en-IN",
+      Hindi: "hi-IN",
+      Bengali: "bn-IN",
+      Assamese: "as-IN"
+    };
+    utterance.lang = langCodes[lang] || "en-IN";
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  } catch (e) {}
+};
+
+const INITIAL_NOTIFICATIONS = [
+  {
+    id: "NOTIF-101",
+    category: "disaster",
+    severity: "critical",
+    highway: "NH-27 (Badarpur)",
+    timestamp: "10:15 AM",
+    isRead: false,
+    title: {
+      English: "🚨 CRITICAL: Flash Flood Alert on NH-27 Badarpur",
+      Hindi: "🚨 अत्यंत गंभीर: NH-27 बदरपुर पर अचानक बाढ़ की चेतावनी",
+      Assamese: "🚨 জৰুৰী সতৰ্কতা: NH-27 বদৰপুৰত নদীৰ পানী উপচি পৰাৰ সতৰ্কবাণী",
+      Bengali: "🚨 জরুরি সতর্কতা: NH-27 বদরপুরে আকস্মিক বন্যার লাল সতর্কতা"
+    },
+    message: {
+      English: "Barak river water levels exceed danger mark by +1.6m near Badarpur ramp. Delivery vans redirected via Haflong Mountain bypass.",
+      Hindi: "बदरपुर रैंप के पास बराक नदी का जलस्तर खतरे के निशान से +1.6 मीटर ऊपर है। डिलीवरी वैन को हाफलोंग बाईपास से भेजा जा रहा है।",
+      Assamese: "বদৰপুৰ সমীপত বৰাক নদীৰ পানী বিপদসীমাৰ পৰা ১.৬ মিটাৰ ওপৰত বৈছে। সৰু বাহনসমূহ হাফলং পথেৰে ঘূৰাই দিয়া হৈছে।",
+      Bengali: "বদরপুরের কাছে বরাক নদীর জলস্তর বিপদসীমার ১.৬ মিটার উপর দিয়ে বইছে। ছোট পণ্যবাহী যান হাফলং বাইপাস দিয়ে ঘুরিয়ে দেওয়া হয়েছে।"
+    }
+  },
+  {
+    id: "NOTIF-102",
+    category: "road",
+    severity: "warning",
+    highway: "NH-06 (Meghalaya)",
+    timestamp: "09:40 AM",
+    isRead: false,
+    title: {
+      English: "⚠️ CAUTION: Active Landslide Slip on NH-06 Jowai Pass",
+      Hindi: "⚠️ सावधानी: मेघालय NH-06 जोवाई दर्रे पर सक्रिय भूस्खलन",
+      Assamese: "⚠️ সতৰ্কতা: মেঘালয়ৰ NH-06 যোৱাই পাছত সক্ৰিয় ভূমিস্খলন",
+      Bengali: "⚠️ সতর্কতা: মেঘালয়ের NH-06 জোওয়াই পাসে সক্রিয় ভূমিধস"
+    },
+    message: {
+      English: "Single lane clearance in progress by BRO. Heavy commercial vehicles (>12 Tons) delayed by ~75 mins. Drive with caution.",
+      Hindi: "सीमा सड़क संगठन (BRO) द्वारा सिंगल लेन खोली जा रही है। भारी ट्रकों में लगभग 75 मिनट का विलंब संभव है।",
+      Assamese: "BRO ৰ দ্বাৰা একক লেন চাফা কৰাৰ কাম চলি আছে। ১২ টনৰ অধিক গধুৰ বাহনৰ যাত্ৰা প্ৰায় ৭৫ মিনিট বিলম্ব হ'ব পাৰে।",
+      Bengali: "BRO দ্বারা এক লেনের যান চলাচল সচল করা হচ্ছে। ১২ টনের বেশি ভারী ট্রাকে ৭৫ মিনিট বিলম্ব হতে পারে।"
+    }
+  },
+  {
+    id: "NOTIF-103",
+    category: "weather",
+    severity: "warning",
+    highway: "NH-10 (Sikkim)",
+    timestamp: "08:55 AM",
+    isRead: false,
+    title: {
+      English: "🌧️ WEATHER: Rockfall Warning on NH-10 Teesta Corridor",
+      Hindi: "🌧️ मौसम चेतावनी: NH-10 तीस्ता कॉरिडोर पर चट्टान गिरने का जोखिम",
+      Assamese: "🌧️ বতৰৰ জাননী: তিস্তা কৰিড'ৰৰ NH-10 ত শিলাবৃষ্টি আৰু শিল খহি পৰাৰ সম্ভাৱনা",
+      Bengali: "🌧️ আবহাওয়া সতর্কতা: তিস্তা করিডোরে NH-10 এ পাথর ধসের সতর্কতা"
+    },
+    message: {
+      English: "High rainfall triggered boulder roll near Sevoke. Night transit restricted for heavy goods convoys.",
+      Hindi: "सेवोक के पास भारी वर्षा से चट्टानें गिरीं। रात के समय भारी मालवाहक काफिले की आवाजाही प्रतिबंधित है।",
+      Assamese: "চেভকৰ সমীপত প্ৰবল বৰষুণৰ ফলত শিল খহিছে। নিশাৰ ভাগত গধুৰ সামগ্ৰী পৰিবহণ স্থগিত কৰা হৈছে।",
+      Bengali: "সেভকের কাছে ভারী বৃষ্টিতে পাথর ধস নেমেছে। রাতের বেলা ভারী পণ্যবাহী কনভয় চলাচল নিষিদ্ধ।"
+    }
+  },
+  {
+    id: "NOTIF-104",
+    category: "fleet",
+    severity: "info",
+    highway: "NH-27-GS",
+    timestamp: "07:30 AM",
+    isRead: true,
+    title: {
+      English: "🚚 FLEET DISPATCH: Emergency Medical Convoy Alpha En Route",
+      Hindi: "🚚 फ्लीट प्रेषण: आवश्यक चिकित्सा राहत काफिला अल्फा रवाना",
+      Assamese: "🚚 ফ্লিট সৰবৰাহ: জৰুৰী চিকিৎসা সাহায্য বাহন আলফা ৰাওনা হ'ল",
+      Bengali: "🚚 ফ্লিট আপডেট: জরুরী মেডিকেল ত্রাণ কনভয় আলফা রওনা হয়েছে"
+    },
+    message: {
+      English: "Truck NER-TRIP-201 carrying vital vaccines & medicines departed Guwahati Central Hub. Real GPS Tracking Active.",
+      Hindi: "महत्वपूर्ण टीके और दवाएं लेकर ट्रक NER-TRIP-201 गुवाहाटी हब से रवाना हुआ। लाइव जीपीएस ट्रैकिंग चालू है।",
+      Assamese: "প্ৰয়োজনীয় ঔষধ আৰু ভেকচিন লৈ ট্ৰাক NER-TRIP-201 গুৱাহাটীৰ পৰা যাত্ৰা আৰম্ভ কৰিছে। লাইভ GPS সক্ৰিয়।",
+      Bengali: "জরুরী ওষুধ ও ভ্যাকসিন সহ ট্রাক NER-TRIP-201 গুয়াহাটি থেকে রওনা হয়েছে। লাইভ জিপিএস সক্রিয়।"
+    }
+  }
+];
 
 /* =========================================================
    DEFAULT RICH INITIAL STATE FOR ALL SECTIONS
@@ -388,6 +543,169 @@ const INITIAL_FLEET = [
     delayReason: "NH-06 Landslide Clearing Operations",
     etaMinutes: 210,
     isRealGpsActive: true
+  }
+];
+
+const INITIAL_TRIPS_DATA = [
+  {
+    id: "TRIP-201",
+    routeCode: "NH-27-GS",
+    routeName: "Guwahati to Silchar Expressway Corridor",
+    source: "Guwahati, Assam",
+    destination: "Silchar, Assam",
+    highway: "NH-27",
+    state: "ASSAM",
+    vehicleName: "Medical Relief Truck Alpha",
+    vehicleType: "mediumTruck",
+    status: "Active",
+    driver: "Rajesh Kalita",
+    cargo: "Essential Medicines & Vaccines",
+    departureTime: "06:30 AM",
+    eta: "02:15 PM"
+  },
+  {
+    id: "TRIP-202",
+    routeCode: "NH-29-DK",
+    routeName: "Dimapur to Kohima Mountain Corridor",
+    source: "Dimapur, Nagaland",
+    destination: "Kohima, Nagaland",
+    highway: "NH-29",
+    state: "NAGALAND",
+    vehicleName: "Food Supply Convoy Bravo",
+    vehicleType: "heavyTruck",
+    status: "Active",
+    driver: "Biren Gogoi",
+    cargo: "Rice, Pulses & Ration Kits",
+    departureTime: "07:45 AM",
+    eta: "11:30 AM"
+  },
+  {
+    id: "TRIP-203",
+    routeCode: "NH-06-SJ",
+    routeName: "Shillong to Jowai Mountain Highway Pass",
+    source: "Shillong, Meghalaya",
+    destination: "Jowai, Meghalaya",
+    highway: "NH-06",
+    state: "MEGHALAYA",
+    vehicleName: "Disaster Emergency Tanker Charlie",
+    vehicleType: "deliveryVan",
+    status: "Active",
+    driver: "Subhash Roy",
+    cargo: "Clean Drinking Water & Relief Kits",
+    departureTime: "08:15 AM",
+    eta: "01:00 PM"
+  },
+  {
+    id: "TRIP-204",
+    routeCode: "NH-37-IJ",
+    routeName: "Imphal to Jiribam Highway",
+    source: "Imphal, Manipur",
+    destination: "Jiribam, Manipur",
+    highway: "NH-37",
+    state: "MANIPUR",
+    vehicleName: "Northeast Logistics Carrier 04",
+    vehicleType: "heavyTruck",
+    status: "Active",
+    driver: "T. Singh",
+    cargo: "Fuel & Power Generation Spares",
+    departureTime: "07:00 AM",
+    eta: "03:45 PM"
+  },
+  {
+    id: "TRIP-205",
+    routeCode: "NH-10-SG",
+    routeName: "Siliguri to Gangtok Axis",
+    source: "Siliguri, West Bengal",
+    destination: "Gangtok, Sikkim",
+    highway: "NH-10",
+    state: "SIKKIM",
+    vehicleName: "Himalayan Express Van 05",
+    vehicleType: "deliveryVan",
+    status: "Active",
+    driver: "Karma Bhutia",
+    cargo: "High-Altitude Medical Equipment",
+    departureTime: "08:30 AM",
+    eta: "05:15 PM"
+  },
+  {
+    id: "TRIP-206",
+    routeCode: "NH-08-AS",
+    routeName: "Agartala to Sabroom Trade Corridor",
+    source: "Agartala, Tripura",
+    destination: "Sabroom, Tripura",
+    highway: "NH-8",
+    state: "TRIPURA",
+    vehicleName: "Tripura Express Logistics 06",
+    vehicleType: "mediumTruck",
+    status: "Active",
+    driver: "Debabrata Deb",
+    cargo: "Agricultural & Food Supplies",
+    departureTime: "09:00 AM",
+    eta: "02:30 PM"
+  },
+  {
+    id: "TRIP-207",
+    routeCode: "NH-13-TB",
+    routeName: "Tezpur to Bomdila & Tawang Route",
+    source: "Tezpur, Assam",
+    destination: "Tawang, Arunachal Pradesh",
+    highway: "NH-13",
+    state: "ARUNACHAL PRADESH",
+    vehicleName: "Arunachal Frontier Carrier 07",
+    vehicleType: "heavyTruck",
+    status: "Active",
+    driver: "Pema Dorjee",
+    cargo: "Winter Clothes & Medical Supplies",
+    departureTime: "05:00 AM",
+    eta: "04:30 PM"
+  },
+  {
+    id: "TRIP-208",
+    routeCode: "NH-54-AL",
+    routeName: "Aizawl to Lunglei Transit",
+    source: "Aizawl, Mizoram",
+    destination: "Lunglei, Mizoram",
+    highway: "NH-54",
+    state: "MIZORAM",
+    vehicleName: "Mizoram Relief Convoy 08",
+    vehicleType: "deliveryVan",
+    status: "Active",
+    driver: "Lalrinzuala",
+    cargo: "Infant Nutrition & Clean Water",
+    departureTime: "06:45 AM",
+    eta: "04:00 PM"
+  },
+  {
+    id: "TRIP-209",
+    routeCode: "NH-715-JD",
+    routeName: "Jorhat to Dibrugarh Transit Corridor",
+    source: "Jorhat, Assam",
+    destination: "Dibrugarh, Assam",
+    highway: "NH-715",
+    state: "ASSAM",
+    vehicleName: "Brahmaputra Supply Van 09",
+    vehicleType: "mediumTruck",
+    status: "Active",
+    driver: "Manish Borah",
+    cargo: "Surgical Equipment & Blood Packets",
+    departureTime: "08:10 AM",
+    eta: "01:45 PM"
+  },
+  {
+    id: "TRIP-210",
+    routeCode: "NH-27-GN",
+    routeName: "Guwahati to Nagaon Supply Shuttle",
+    source: "Guwahati, Assam",
+    destination: "Nagaon, Assam",
+    highway: "NH-27",
+    state: "ASSAM",
+    vehicleName: "Central Assam Express 10",
+    vehicleType: "mediumTruck",
+    status: "Active",
+    driver: "Hiren Sharma",
+    cargo: "Dry Provisions & Water Purification Kits",
+    departureTime: "09:30 AM",
+    eta: "12:15 PM"
   }
 ];
 
@@ -830,12 +1148,23 @@ function MapView({
     <>
       {/* HIGHWAY ROUTE POLYLINE */}
       {points.length > 0 && (
-        <Polyline
-          positions={points}
-          color={emergencyMode ? "#dc2626" : "#2563eb"}
-          weight={8}
-          opacity={0.95}
-        />
+        <>
+          {emergencyMode && (
+            <Polyline
+              positions={points}
+              color="#ef4444"
+              weight={16}
+              opacity={0.35}
+            />
+          )}
+          <Polyline
+            positions={points}
+            color={emergencyMode ? "#b91c1c" : "#2563eb"}
+            weight={emergencyMode ? 8 : 7}
+            opacity={0.95}
+            dashArray={emergencyMode ? "12, 6" : null}
+          />
+        </>
       )}
 
       {/* ORIGIN & DESTINATION MARKERS */}
@@ -843,12 +1172,12 @@ function MapView({
         <>
           <Marker position={points[0]} icon={defaultIcon}>
             <Popup>
-              <strong>📍 Route Origin Hub</strong>
+              <strong>{emergencyMode ? "🚨 Emergency Staging Base" : "📍 Route Origin Hub"}</strong>
             </Popup>
           </Marker>
           <Marker position={points[points.length - 1]} icon={defaultIcon}>
             <Popup>
-              <strong>🏁 Destination Depot</strong>
+              <strong>{emergencyMode ? "🏁 Critical Disaster Relief Drop Depot" : "🏁 Destination Depot"}</strong>
             </Popup>
           </Marker>
         </>
@@ -1069,6 +1398,7 @@ function App() {
   const [districtFilter, setDistrictFilter] = useState("All");
   const [districtStateFilter, setDistrictStateFilter] = useState("All");
   const [emergencyMode, setEmergencyMode] = useState(false);
+  const [emergencyDetails, setEmergencyDetails] = useState(null);
 
   // Route Planning State
   const [source, setSource] = useState("Guwahati, Assam");
@@ -1079,6 +1409,135 @@ function App() {
   const [destRiskInfo, setDestRiskInfo] = useState(DEFAULT_RISK_INFO);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const toggleEmergencyMode = () => {
+    const nextMode = !emergencyMode;
+    setEmergencyMode(nextMode);
+    let nextVehicle = vehicle;
+    if (nextMode && vehicle === "heavyTruck") {
+      nextVehicle = "deliveryVan";
+      setVehicle("deliveryVan");
+    }
+    findRoute(nextMode, nextVehicle);
+
+    if (nextMode) {
+      triggerMultilingualAlert({
+        category: "disaster",
+        severity: "critical",
+        highway: "NER All Strategic Corridors",
+        title: {
+          English: "🚨 NDMA & MDoNER DISASTER PROTOCOL ENGAGED",
+          Hindi: "🚨 एनडीएमए एवं एमडीओएनईआर आपदा प्रोटोकॉल सक्रिय",
+          Assamese: "🚨 এনডিএমএ আৰু এমডিঅ'এনইআৰ দুৰ্যোগ প্ৰটোকল সক্ৰিয়",
+          Bengali: "🚨 এনডিএমএ ও এমডিওএনইআর দুর্যোগ প্রটোকল সক্রিয়"
+        },
+        message: {
+          English: "Priority Green Corridor convoy escort active with 100% statutory toll waiver across all NER highways.",
+          Hindi: "सभी पूर्वोत्तर राजमार्गों पर 100% टोल छूट के साथ प्राथमिकता ग्रीन कॉरिडोर सक्रिय किया गया।",
+          Assamese: "সকলো উত্তৰ-পূব ৰাজপথত ১০০% টোল ৰেহাই আৰু অগ্ৰাধিকাৰমূলক সেউজ কৰিড'ৰ আৰম্ভ কৰা হৈছে।",
+          Bengali: "সমস্ত উত্তর-পূর্ব মহাসড়কে ১০০% টোল মকুব সহ অগ্রাধিকারমূলক গ্রিন করিডোর কনভয় কার্যকর হয়েছে।"
+        }
+      });
+    }
+  };
+
+  // REAL MULTILINGUAL NOTIFICATION & ALERT SERVICE STATE
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem("nerNotifications");
+      return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
+    } catch {
+      return INITIAL_NOTIFICATIONS;
+    }
+  });
+  const [showNotifCenter, setShowNotifCenter] = useState(false);
+  const [notifSoundEnabled, setNotifSoundEnabled] = useState(true);
+  const [notifVoiceEnabled, setNotifVoiceEnabled] = useState(false);
+  const [notifCategoryFilter, setNotifCategoryFilter] = useState("All");
+  const [activeToast, setActiveToast] = useState(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("nerNotifications", JSON.stringify(notifications));
+    } catch {}
+  }, [notifications]);
+
+  const unreadAlertCount = notifications.filter((n) => !n.isRead).length;
+  const hasCriticalUnread = notifications.some((n) => !n.isRead && n.severity === "critical");
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (notifCategoryFilter === "All") return true;
+    return n.category === notifCategoryFilter;
+  });
+
+  const triggerMultilingualAlert = (alertData) => {
+    const newAlert = {
+      id: `NOTIF-${Date.now()}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      isRead: false,
+      ...alertData
+    };
+    setNotifications((prev) => [newAlert, ...prev]);
+    setActiveToast(newAlert);
+
+    if (notifSoundEnabled) {
+      playNotificationSound();
+    }
+
+    if (notifVoiceEnabled) {
+      const spokenText = (newAlert.title[language] || newAlert.title.English || "") + ". " + (newAlert.message[language] || newAlert.message.English || "");
+      speakAlertText(spokenText, language);
+    }
+
+    setTimeout(() => {
+      setActiveToast((curr) => (curr?.id === newAlert.id ? null : curr));
+    }, 7000);
+  };
+
+  const markAllNotifsAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  };
+
+  const markNotifAsRead = (id) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+  };
+
+  const dismissNotif = (id) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const clearAllNotifications = () => {
+    if (window.confirm("Clear all active notifications and alerts?")) {
+      setNotifications([]);
+      setActiveToast(null);
+    }
+  };
+
+  const playVoiceAlertForNotif = (notif) => {
+    const text = (notif.title[language] || notif.title.English || "") + ". " + (notif.message[language] || notif.message.English || "");
+    playNotificationSound();
+    speakAlertText(text, language);
+  };
+
+  const sendTestMultilingualAlert = () => {
+    triggerMultilingualAlert({
+      category: "weather",
+      severity: "warning",
+      highway: "NH-06 / NH-27 Corridor",
+      title: {
+        English: "⚡ WEATHER ALERT: Heavy Pre-Monsoon Thunderstorms Detected",
+        Hindi: "⚡ मौसम चेतावनी: पूर्व-मानसून भारी आंधी-तूफान का अलर्ट",
+        Assamese: "⚡ বতৰৰ জাননী: প্ৰাক-বাৰিষাৰ প্ৰবল ধুমুহা-বৰষুণৰ সতৰ্কবাণী",
+        Bengali: "⚡ আবহাওয়া সতর্কতা: প্রাক-বর্ষার তীব্র বজ্রবিদ্যুৎ সহ বৃষ্টির সতর্কতা"
+      },
+      message: {
+        English: "High wind gusts and slippery mountain gradients on Shillong to Silchar route. Drivers advised to maintain convoy discipline.",
+        Hindi: "शिलांग से सिलचर मार्ग पर तेज हवाएं और फिसलन भरी ढलानें। वाहन चालकों को सावधानी बरतने की सलाह दी गई है।",
+        Assamese: "শ্বিলং-শিলচৰ পথত তীব্ৰ বতাহ আৰু পিছল পাহাৰীয়া পথ। চালকসকলক সতৰ্কতা অৱলম্বন কৰিবলৈ পৰামৰ্শ দিয়া হৈছে।",
+        Bengali: "শিলং থেকে শিলচর রুটে তীব্র বাতাস ও পিচ্ছিল পাহাড়ি পথ। চালকদের সতর্ক থাকার পরামর্শ দেওয়া হয়েছে।"
+      }
+    });
+  };
 
   // REAL GPS TELEMETRY TRACKING STATE
   const [realGpsActive, setRealGpsActive] = useState(true);
@@ -1105,7 +1564,12 @@ function App() {
 
   // Weather, Disruptions, Incidents, Infrastructure & Fleet State
   const [weatherData, setWeatherData] = useState(null);
-  const [disruptions, setDisruptions] = useState(INITIAL_DISRUPTIONS);
+  const [disruptions, setDisruptions] = useState(() => {
+    try {
+      if (localStorage.getItem("nerOverviewCleared") === "true") return [];
+    } catch {}
+    return INITIAL_DISRUPTIONS;
+  });
   const [incidentsList, setIncidentsList] = useState([]);
   const [fleetVehicles, setFleetVehicles] = useState(INITIAL_FLEET);
   const [districtsMatrix, setDistrictsMatrix] = useState(INITIAL_DISTRICTS);
@@ -1155,6 +1619,24 @@ function App() {
       return [];
     }
   });
+
+  // Scheduled Trips & Route Search State
+  const [isFleetCleared, setIsFleetCleared] = useState(() => {
+    try {
+      return localStorage.getItem("nerFleetCleared") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [tripsList, setTripsList] = useState(() => {
+    try {
+      if (localStorage.getItem("nerFleetCleared") === "true") {
+        return [];
+      }
+    } catch {}
+    return INITIAL_TRIPS_DATA;
+  });
+  const [routeSearchQuery, setRouteSearchQuery] = useState("");
 
   // Traffic Data State
   const [trafficList, setTrafficList] = useState([]);
@@ -1308,9 +1790,95 @@ function App() {
     fetchDistricts();
     fetchInfrastructure();
     fetchTraffic();
+    fetchTrips();
+    fetchNotifications();
     fetchWeather(26.1445, 91.7362, "Guwahati");
     findRoute();
   }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/notifications");
+      const data = await res.json();
+      if (data.notifications?.length) {
+        setNotifications((prev) => {
+          const existingIds = new Set(prev.map(n => n.id));
+          const newItems = data.notifications.filter(n => !existingIds.has(n.id));
+          return [...newItems, ...prev];
+        });
+      }
+    } catch (e) {}
+  };
+
+  const fetchTrips = async (search = "") => {
+    try {
+      if (localStorage.getItem("nerFleetCleared") === "true") {
+        setTripsList([]);
+        return;
+      }
+      const url = search && search.trim()
+        ? `http://localhost:5000/api/trips?search=${encodeURIComponent(search.trim())}`
+        : "http://localhost:5000/api/trips";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.trips?.length) {
+        setTripsList(data.trips);
+      }
+    } catch (e) {}
+  };
+
+  // Sync route search query to backend with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchTrips(routeSearchQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [routeSearchQuery]);
+
+  // Dynamic Route & Trip search filtering
+  const filteredTrips = useMemo(() => {
+    let combined = [...tripsList];
+    if (savedTrips && savedTrips.length > 0) {
+      const mappedSaved = savedTrips.map(st => ({
+        id: `SAVED-${st.id}`,
+        routeCode: "SAVED-RT",
+        routeName: `${st.source} to ${st.destination}`,
+        source: st.source,
+        destination: st.destination,
+        highway: "NER Highway",
+        state: "NER",
+        vehicleName: st.vehicle === "heavyTruck" ? "Heavy Truck (15T)" : st.vehicle === "deliveryVan" ? "Emergency Van (2.5T)" : "Medium Truck (7.5T)",
+        vehicleType: st.vehicle || "mediumTruck",
+        status: st.status || "Active",
+        driver: "Field Dispatcher",
+        cargo: "Essential Delivery Cargo",
+        departureTime: st.savedAt || "Recent",
+        eta: st.status === "Delivered" ? "Delivered / Completed" : `${st.durationMinutes || 120} min (In Transit)`
+      }));
+      combined = [...mappedSaved, ...combined];
+    }
+
+    if (!routeSearchQuery.trim()) {
+      return combined;
+    }
+
+    const q = routeSearchQuery.toLowerCase().trim();
+    return combined.filter(t =>
+      (t.routeName && t.routeName.toLowerCase().includes(q)) ||
+      (t.source && t.source.toLowerCase().includes(q)) ||
+      (t.destination && t.destination.toLowerCase().includes(q)) ||
+      (t.highway && t.highway.toLowerCase().includes(q)) ||
+      (t.state && t.state.toLowerCase().includes(q)) ||
+      (t.driver && t.driver.toLowerCase().includes(q)) ||
+      (t.vehicleName && t.vehicleName.toLowerCase().includes(q)) ||
+      (t.cargo && t.cargo.toLowerCase().includes(q)) ||
+      (t.status && t.status.toLowerCase().includes(q))
+    );
+  }, [tripsList, savedTrips, routeSearchQuery]);
+
+  const totalTripsCount = filteredTrips.length;
+  const activeTripsCount = filteredTrips.filter(t => t.status.toLowerCase() === "active" || t.status.toLowerCase() === "in transit").length;
+  const deliveredTripsCount = filteredTrips.filter(t => t.status.toLowerCase() === "delivered" || t.status.toLowerCase() === "completed").length;
 
   const fetchTraffic = async () => {
     try {
@@ -1419,6 +1987,10 @@ function App() {
 
   const fetchDisruptions = async () => {
     try {
+      if (localStorage.getItem("nerOverviewCleared") === "true") {
+        setDisruptions([]);
+        return;
+      }
       const res = await fetch("http://localhost:5000/api/disruptions");
       const data = await res.json();
       if (data.disruptions?.length) setDisruptions(data.disruptions);
@@ -1427,6 +1999,10 @@ function App() {
 
   const fetchIncidents = async () => {
     try {
+      if (localStorage.getItem("nerOverviewCleared") === "true") {
+        setIncidentsList([]);
+        return;
+      }
       const res = await fetch("http://localhost:5000/api/incidents");
       const data = await res.json();
       if (data.incidents) setIncidentsList(data.incidents);
@@ -1534,13 +2110,14 @@ function App() {
     }
   };
 
-  const saveTrip = () => {
+  const saveTrip = (tripStatus = "Active") => {
     if (!selectedRoute) return;
     const tripRecord = {
       id: Date.now(),
       source,
       destination,
       vehicle,
+      status: tripStatus,
       distanceKm: selectedRoute.distanceKm,
       durationMinutes: selectedRoute.durationMinutes,
       totalDeliveryCost: selectedRoute.totalDeliveryCost,
@@ -1549,10 +2126,82 @@ function App() {
     const nextSaved = [tripRecord, ...savedTrips];
     setSavedTrips(nextSaved);
     localStorage.setItem("nerTrips", JSON.stringify(nextSaved));
-    alert("Trip saved successfully to logistics history!");
+    alert(tripStatus === "Delivered" ? "Route marked as Delivered in logistics history!" : "Trip saved to Active routes queue!");
   };
 
-  const findRoute = async () => {
+  const completeCurrentRoute = () => {
+    if (!selectedRoute) return;
+    const completedTrip = {
+      id: Date.now(),
+      source,
+      destination,
+      vehicle,
+      status: "Delivered",
+      distanceKm: selectedRoute.distanceKm,
+      durationMinutes: selectedRoute.durationMinutes,
+      totalDeliveryCost: selectedRoute.totalDeliveryCost,
+      savedAt: new Date().toLocaleString()
+    };
+    const nextSaved = [completedTrip, ...savedTrips.filter(t => !(t.source === source && t.destination === destination))];
+    setSavedTrips(nextSaved);
+    localStorage.setItem("nerTrips", JSON.stringify(nextSaved));
+
+    triggerMultilingualAlert({
+      category: "fleet",
+      severity: "info",
+      highway: `${source} ➔ ${destination}`,
+      title: {
+        English: `✅ Delivery Completed: ${destination}`,
+        Hindi: `✅ डिलीवरी संपन्न: ${destination}`,
+        Assamese: `✅ সৰবৰাহ সম্পূৰ্ণ: ${destination}`,
+        Bengali: `✅ ডেলিভারি সম্পন্ন: ${destination}`
+      },
+      message: {
+        English: `Essential cargo transported from ${source} to ${destination} has arrived safely and delivered.`,
+        Hindi: `${source} से ${destination} तक आवश्यक सामग्री सुरक्षित पहुंच गई और डिलीवर हो गई।`,
+        Assamese: `${source} ৰ পৰা ${destination} লৈ প্ৰয়োজনীয় সামগ্ৰী সফলতাৰে যোগান ধৰা হ'ল।`,
+        Bengali: `${source} থেকে ${destination} এ প্রয়োজনীয় পণ্য নিরাপদে পৌঁছেছে এবং ডেলিভারি সম্পন্ন হয়েছে।`
+      }
+    });
+
+    alert(`🎉 Route Completed! Delivery from ${source} to ${destination} is now Delivered. Delivered count increased by +1!`);
+  };
+
+  const clearTripHistory = () => {
+    if (window.confirm("Are you sure you want to clear all saved trip history? This will reset all saved routes.")) {
+      setSavedTrips([]);
+      localStorage.removeItem("nerTrips");
+      alert("All saved trip history has been cleared!");
+    }
+  };
+
+  const clearAllOperationalData = () => {
+    if (window.confirm("Do you want to clear ALL data across REAL-TIME LOGISTICS OVERVIEW (Total Trips, Active Trips, Delivered, Active Hazards, and Field Incident Reports to 0)?")) {
+      localStorage.setItem("nerOverviewCleared", "true");
+      localStorage.setItem("nerFleetCleared", "true");
+      setIsFleetCleared(true);
+      setTripsList([]);
+      setSavedTrips([]);
+      setDisruptions([]);
+      setIncidentsList([]);
+      localStorage.removeItem("nerTrips");
+      alert("All 5 metrics across Real-Time Logistics Overview (Trips, Hazards, and Field Reports) are now reset to 0!");
+    }
+  };
+
+  const restoreOperationalData = () => {
+    localStorage.removeItem("nerOverviewCleared");
+    localStorage.removeItem("nerFleetCleared");
+    setIsFleetCleared(false);
+    setTripsList(INITIAL_TRIPS_DATA);
+    setDisruptions(INITIAL_DISRUPTIONS);
+    fetchTrips(routeSearchQuery);
+    fetchDisruptions();
+    fetchIncidents();
+    alert("Live scheduled fleet operations, active highway hazards, and field incident reports have been restored!");
+  };
+
+  const findRoute = async (overrideEmergency = null, overrideVehicle = null) => {
     if (!source.trim() || !destination.trim()) {
       setError("Please enter both source and destination.");
       return;
@@ -1561,15 +2210,19 @@ function App() {
     setLoading(true);
     setError("");
 
+    const activeEmergency = overrideEmergency !== null ? overrideEmergency : emergencyMode;
+    const activeVehicle = overrideVehicle !== null ? overrideVehicle : vehicle;
+
     try {
       const response = await fetch(
-        `http://localhost:5000/api/route?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&vehicle=${vehicle}`
+        `http://localhost:5000/api/route?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&vehicle=${activeVehicle}&emergency=${activeEmergency}`
       );
       const data = await response.json();
 
       if (data.routes?.length) setRoutes(data.routes);
       if (data.destRiskInfo) setDestRiskInfo(data.destRiskInfo);
       if (data.recommendedRoute) setSelectedRoute(data.recommendedRoute);
+      if (data.emergencyDetails) setEmergencyDetails(data.emergencyDetails);
 
       if (data.destinationCoords) {
         fetchWeather(data.destinationCoords.lat, data.destinationCoords.lon, destination);
@@ -1585,63 +2238,86 @@ function App() {
     const target = tripData || {
       source,
       destination,
-      vehicle: vehicle === "heavyTruck" ? "Heavy Truck" : "Medium Truck",
+      vehicle: vehicle === "heavyTruck" ? "Heavy Truck (15 Ton)" : vehicle === "deliveryVan" ? "Emergency Delivery Van (2.5 Ton)" : "Medium Supply Truck (7.5 Ton)",
       distanceKm: selectedRoute?.distanceKm || 0,
       durationMinutes: selectedRoute?.durationMinutes || 0,
       fuelLitres: selectedRoute?.fuelLitres || 0,
       totalDeliveryCost: selectedRoute?.totalDeliveryCost || 0,
+      tollCost: selectedRoute?.tollCost ?? (emergencyMode ? 0 : 500),
       score: selectedRoute?.score || 90,
-      date: new Date().toLocaleDateString()
+      date: new Date().toLocaleDateString(),
+      isEmergency: emergencyMode
     };
 
     const doc = new jsPDF();
-    doc.setFillColor(37, 99, 235);
+    const primaryColor = target.isEmergency ? [220, 38, 38] : [37, 99, 235];
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.rect(0, 0, 210, 30, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
-    doc.text("MDoNER - NER Logistics Intelligence Platform", 14, 18);
+    doc.text(
+      target.isEmergency ? "🚨 MDoNER - EMERGENCY DISASTER GREEN CORRIDOR PASS" : "MDoNER - NER Logistics Intelligence Platform",
+      14,
+      18
+    );
     doc.setFontSize(10);
-    doc.text("Ministry of Development of North Eastern Region | Govt of India", 14, 25);
+    doc.text("Ministry of Development of North Eastern Region | National Disaster Management Authority", 14, 25);
 
     doc.setTextColor(17, 24, 39);
     doc.setFontSize(14);
-    doc.text("OFFICIAL DELIVERY ROUTE & ACCESSIBILITY REPORT", 14, 42);
+    doc.text(
+      target.isEmergency ? "OFFICIAL DISASTER RELIEF GREEN CORRIDOR PASS" : "OFFICIAL DELIVERY ROUTE & ACCESSIBILITY REPORT",
+      14,
+      42
+    );
 
     doc.setFontSize(10);
     doc.text(`Report Date: ${target.date}`, 14, 52);
-    doc.text(`Origin Location: ${target.source}`, 14, 60);
-    doc.text(`Destination Target: ${target.destination}`, 14, 68);
+    doc.text(`Origin Hub: ${target.source}`, 14, 60);
+    doc.text(`Destination Depot: ${target.destination}`, 14, 68);
     doc.text(`Assigned Vehicle Type: ${target.vehicle}`, 14, 76);
 
-    doc.line(14, 82, 196, 82);
+    if (target.isEmergency) {
+      doc.setTextColor(185, 28, 28);
+      doc.setFontSize(10);
+      doc.text(`Clearance Token: ${emergencyDetails?.greenCorridorCode || "NER-GC-2026-PRIORITY"} • PRIORITY 1 ESCORT ACTIVE`, 14, 84);
+      doc.text("TOLL CHARGES: 100% WAIVED AS PER DISASTER MANAGEMENT ACT, 2005", 14, 90);
+      doc.line(14, 94, 196, 94);
+    } else {
+      doc.line(14, 82, 196, 82);
+    }
+
+    const startY = target.isEmergency ? 102 : 92;
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(12);
+    doc.text("Route Logistics Metrics", 14, startY);
+    doc.setFontSize(10);
+    doc.text(`Total Distance: ${target.distanceKm} km`, 20, startY + 10);
+    doc.text(`Est. Transit Time: ${Math.floor(target.durationMinutes / 60)}h ${target.durationMinutes % 60}m`, 20, startY + 18);
+    doc.text(`Estimated Fuel Consumption: ${target.fuelLitres} Litres`, 20, startY + 26);
+    doc.text(`Logistics Score: ${target.score} / 100`, 20, startY + 34);
+    doc.text(`Highway Toll Charges: ${target.tollCost === 0 ? "Rs. 0 (Toll-Exempt Under NDMA)" : `Rs. ${target.tollCost}`}`, 20, startY + 42);
+    doc.text(`Total Delivery Cost: Rs. ${target.totalDeliveryCost}`, 20, startY + 50);
+
+    const riskY = startY + 62;
+    doc.line(14, riskY - 4, 196, riskY - 4);
 
     doc.setFontSize(12);
-    doc.text("Route Logistics Metrics", 14, 92);
+    doc.text("Environmental Risk & Hazard Model Evaluation", 14, riskY);
     doc.setFontSize(10);
-    doc.text(`Total Distance: ${target.distanceKm} km`, 20, 102);
-    doc.text(`Est. Travel Time: ${Math.floor(target.durationMinutes / 60)}h ${target.durationMinutes % 60}m`, 20, 110);
-    doc.text(`Estimated Fuel Consumption: ${target.fuelLitres} Litres`, 20, 118);
-    doc.text(`Logistics Score: ${target.score} / 100`, 20, 126);
-    doc.text(`Total Delivery Cost: Rs. ${target.totalDeliveryCost}`, 20, 134);
-
-    doc.line(14, 142, 196, 142);
-
-    doc.setFontSize(12);
-    doc.text("Environmental Risk & Disruption Model Summary", 14, 152);
-    doc.setFontSize(10);
-    doc.text(`Model: ${destRiskInfo?.model || "NER-Environmental-RandomForest-Classifier-v3.2"}`, 20, 162);
-    doc.text(`Risk Status: ${destRiskInfo?.risk || "MEDIUM"} Risk Zone`, 20, 170);
-    doc.text(`Landslide / Flood Probability: ${destRiskInfo?.probabilityPercent || 45}%`, 20, 178);
-    doc.text(`Advisory: ${destRiskInfo?.advisory || "Standard precautions required."}`, 20, 186);
+    doc.text(`Model: ${destRiskInfo?.model || "NER-Environmental-RandomForest-Classifier-v3.2"}`, 20, riskY + 10);
+    doc.text(`Risk Status: ${destRiskInfo?.risk || "MEDIUM"} Risk Zone`, 20, riskY + 18);
+    doc.text(`Landslide / Flood Probability: ${destRiskInfo?.probabilityPercent || 45}%`, 20, riskY + 26);
+    doc.text(`Advisory: ${destRiskInfo?.advisory || "Standard precautions required."}`, 20, riskY + 34);
 
     doc.setFillColor(243, 244, 246);
-    doc.rect(14, 195, 182, 35, "F");
+    doc.rect(14, riskY + 44, 182, 35, "F");
     doc.setTextColor(55, 65, 81);
-    doc.text("Certified by MDoNER Logistics Intelligence Core Model Engine", 20, 207);
-    doc.text("System Generated Document • Valid for Emergency Logistics Planning", 20, 217);
+    doc.text("Certified by MDoNER Logistics Intelligence Core & NDMA Green Corridor Controller", 20, riskY + 56);
+    doc.text("System Generated Document • Valid for Emergency Logistics Priority Movement", 20, riskY + 66);
 
-    doc.save(`NER-Logistics-Report-${target.source}-${target.destination}.pdf`);
+    doc.save(`NER-${target.isEmergency ? "Emergency-Pass" : "Logistics-Report"}-${target.source}-${target.destination}.pdf`);
   };
 
   if (!currentUser) {
@@ -1753,9 +2429,159 @@ function App() {
             <option>Bengali</option>
           </select>
 
+          {/* REAL MULTILINGUAL NOTIFICATION & ALERT BELL */}
+          <div className="notif-bell-container">
+            <button
+              className={`notif-bell-button ${hasCriticalUnread ? "bell-critical-alert" : ""}`}
+              onClick={() => setShowNotifCenter(!showNotifCenter)}
+              title={`${t("notifTitle")} (${unreadAlertCount} unread)`}
+            >
+              <span className="bell-icon">🔔</span>
+              <span className="bell-label">{t("notifBell")}</span>
+              {unreadAlertCount > 0 && (
+                <span className={`bell-badge ${hasCriticalUnread ? "badge-critical-pulse" : ""}`}>
+                  {unreadAlertCount}
+                </span>
+              )}
+            </button>
+
+            {/* NOTIFICATION CENTER DROPDOWN PANEL */}
+            {showNotifCenter && (
+              <div className="notif-dropdown-panel" onClick={(e) => e.stopPropagation()}>
+                <div className="notif-panel-header">
+                  <div className="notif-header-title">
+                    <span className="notif-header-icon">🚨</span>
+                    <div>
+                      <h4>{t("notifTitle")}</h4>
+                      <p>{t("notifSubtitle")} • <strong>{language}</strong></p>
+                    </div>
+                  </div>
+                  <button className="notif-close-btn" onClick={() => setShowNotifCenter(false)}>✕</button>
+                </div>
+
+                {/* NOTIFICATION CONTROLS BAR */}
+                <div className="notif-controls-bar">
+                  <button
+                    className={`notif-toggle-chip ${notifSoundEnabled ? "active-chip" : ""}`}
+                    onClick={() => setNotifSoundEnabled(!notifSoundEnabled)}
+                    title="Toggle Audio Chime on alert"
+                  >
+                    {notifSoundEnabled ? "🔊 Chime: ON" : "🔇 Chime: OFF"}
+                  </button>
+                  <button
+                    className={`notif-toggle-chip ${notifVoiceEnabled ? "active-chip voice-active" : ""}`}
+                    onClick={() => {
+                      const nextVoice = !notifVoiceEnabled;
+                      setNotifVoiceEnabled(nextVoice);
+                      if (nextVoice) {
+                        speakAlertText(language === "Hindi" ? "आवाज चेतावनी सक्रिय" : language === "Assamese" ? "কণ্ঠস্বৰ সতৰ্কতা সক্ৰিয়" : language === "Bengali" ? "ভয়েস অ্যালার্ট সক্রিয়" : "Multilingual Voice Alerts Active", language);
+                      }
+                    }}
+                    title="Toggle Text-to-Speech Voice Alert Announcement in selected language"
+                  >
+                    🗣️ {t("voiceAlerts")}: {notifVoiceEnabled ? "ON" : "OFF"}
+                  </button>
+                  {unreadAlertCount > 0 && (
+                    <button className="notif-action-text-btn" onClick={markAllNotifsAsRead}>
+                      ✓ {t("markAllRead")}
+                    </button>
+                  )}
+                  <button className="notif-test-btn" onClick={sendTestMultilingualAlert}>
+                    📢 {t("testAlert")}
+                  </button>
+                </div>
+
+                {/* CATEGORY FILTER TABS */}
+                <div className="notif-filter-tabs">
+                  {["All", "disaster", "weather", "road", "fleet"].map((cat) => (
+                    <button
+                      key={cat}
+                      className={`notif-tab ${notifCategoryFilter === cat ? "active-tab" : ""}`}
+                      onClick={() => setNotifCategoryFilter(cat)}
+                    >
+                      {cat === "All" && "🌐 All Alerts"}
+                      {cat === "disaster" && "🚨 Disaster"}
+                      {cat === "weather" && "🌧️ Weather"}
+                      {cat === "road" && "🛣️ Road/Bridge"}
+                      {cat === "fleet" && "🚚 Fleet"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ALERTS LIST */}
+                <div className="notif-alerts-list">
+                  {filteredNotifications.length === 0 ? (
+                    <div className="notif-empty-state">
+                      <span>✅</span>
+                      <p>{t("noAlerts")}</p>
+                    </div>
+                  ) : (
+                    filteredNotifications.map((n) => {
+                      const localizedTitle = n.title[language] || n.title.English || "";
+                      const localizedMessage = n.message[language] || n.message.English || "";
+                      return (
+                        <div
+                          key={n.id}
+                          className={`notif-alert-card ${n.severity} ${n.isRead ? "is-read" : "is-unread"}`}
+                          onClick={() => markNotifAsRead(n.id)}
+                        >
+                          <div className="notif-card-header">
+                            <div className="notif-card-meta">
+                              <span className={`severity-pill ${n.severity}`}>
+                                {n.severity.toUpperCase()}
+                              </span>
+                              {n.highway && <span className="highway-tag">📍 {n.highway}</span>}
+                              <span className="timestamp">{n.timestamp}</span>
+                            </div>
+                            <div className="notif-card-buttons">
+                              <button
+                                className="listen-alert-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  playVoiceAlertForNotif(n);
+                                }}
+                                title={`Listen in ${language}`}
+                              >
+                                🔊 {language}
+                              </button>
+                              <button
+                                className="dismiss-alert-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  dismissNotif(n.id);
+                                }}
+                                title="Dismiss alert"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                          <h5>{localizedTitle}</h5>
+                          <p>{localizedMessage}</p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* FOOTER */}
+                {notifications.length > 0 && (
+                  <div className="notif-panel-footer">
+                    <button className="clear-all-notifs-btn" onClick={clearAllNotifications}>
+                      🗑️ Clear All Alerts
+                    </button>
+                    <span className="notif-lang-indicator">
+                      🌐 Auto-translating into <strong>{language}</strong>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <button
             className={`sih-emergency ${emergencyMode ? "active" : ""}`}
-            onClick={() => setEmergencyMode(!emergencyMode)}
+            onClick={toggleEmergencyMode}
           >
             {emergencyMode ? "🚨 DISASTER MODE ACTIVE" : "🚨 TOGGLE EMERGENCY MODE"}
           </button>
@@ -1821,27 +2647,175 @@ function App() {
         </div>
       )}
 
-      {/* TOP KPI ANALYTICS GRID */}
-      <section className="analytics-section">
-        <div className="analytics-card">
-          <h3>📦 Saved Trips</h3>
-          <h1>{savedTrips.length}</h1>
-          <p>Archived delivery routes</p>
+      {/* DASHBOARD STATS & ROUTE FILTER SECTION */}
+      <section className="stats-dashboard-wrapper">
+        <div className="stats-header-toolbar">
+          <div className="stats-title-group">
+            <span className="stats-kicker">📊 REAL-TIME LOGISTICS OVERVIEW</span>
+            <h2>Route & Trip Operations</h2>
+          </div>
+          <div className="stats-search-box">
+            <span className="stats-search-icon">🔍</span>
+            <input
+              type="text"
+              id="route-search-bar"
+              value={routeSearchQuery}
+              onChange={(e) => setRouteSearchQuery(e.target.value)}
+              placeholder="Search route by origin, destination, corridor or highway..."
+              className="stats-search-input"
+            />
+            {routeSearchQuery && (
+              <button
+                className="stats-search-clear"
+                onClick={() => setRouteSearchQuery("")}
+                title="Clear route search"
+              >
+                ✕
+              </button>
+            )}
+            <span className="stats-filter-tag">
+              {routeSearchQuery ? `Filtered: ${totalTripsCount} routes` : `${totalTripsCount} Routes`}
+            </span>
+            {isFleetCleared ? (
+              <button
+                className="stats-restore-fleet-btn"
+                onClick={restoreOperationalData}
+                title="Restore default scheduled fleet operations"
+              >
+                🔄 Restore Fleet Data (10 Routes)
+              </button>
+            ) : (
+              <button
+                className="stats-clear-fleet-btn"
+                onClick={clearAllOperationalData}
+                title="Clear all active fleet operations and reset counts to 0"
+              >
+                🗑️ Clear All Operations (Reset to 0)
+              </button>
+            )}
+            {!isFleetCleared && savedTrips.length > 0 && (
+              <button
+                className="stats-clear-history-btn"
+                onClick={clearTripHistory}
+                title="Clear only saved trip history"
+              >
+                🗑️ Clear History ({savedTrips.length})
+              </button>
+            )}
+          </div>
         </div>
-        <div className="analytics-card">
-          <h3>🚚 Active Commodity Fleet</h3>
-          <h1>{fleetVehicles.length}</h1>
-          <p>Medicines & Relief Convoys</p>
-        </div>
-        <div className="analytics-card">
-          <h3>⚠️ Active Highway Hazards</h3>
-          <h1>{disruptions.length}</h1>
-          <p>Landslides & Floods</p>
-        </div>
-        <div className="analytics-card">
-          <h3>📋 Field Incident Reports</h3>
-          <h1>{incidentsList.length}</h1>
-          <p>Geo-tagged updates</p>
+
+        {/* STATS CARDS ROW: Fully responsive horizontal layout */}
+        <div className="analytics-section">
+          {/* Card 1: Total Trips */}
+          <div className="analytics-card metric-card-total">
+            <div className="card-top-row">
+              <span className="card-icon">📦</span>
+              <span className="card-pill">All Scheduled</span>
+            </div>
+            <h3>Total Trips</h3>
+            <h1>{totalTripsCount}</h1>
+            <p>All scheduled routes</p>
+          </div>
+
+          {/* Card 2: Active Trips */}
+          <div className="analytics-card metric-card-active">
+            <div className="card-top-row">
+              <span className="card-icon">🚚</span>
+              <span className="card-pill active-pill">● Currently Active</span>
+            </div>
+            <h3>Active Trips</h3>
+            <h1 className="active-num">{activeTripsCount}</h1>
+            <p>Currently on route</p>
+          </div>
+
+          {/* Card 3: Delivered */}
+          <div className="analytics-card metric-card-delivered">
+            <div className="card-top-row">
+              <span className="card-icon">✅</span>
+              <span className="card-pill delivered-pill">Completed</span>
+            </div>
+            <h3>Delivered</h3>
+            <h1 className="delivered-num">{deliveredTripsCount}</h1>
+            <p>Successfully completed</p>
+          </div>
+
+          {/* Card 4: Active Highway Hazards */}
+          <div className="analytics-card card-hazards">
+            <div className="card-top-row">
+              <span className="card-icon">⚠️</span>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <span className="card-pill hazard-pill">{disruptions.length > 0 ? "Active Alerts" : "All Clear"}</span>
+                {disruptions.length > 0 ? (
+                  <button
+                    className="card-quick-clear-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm("Clear active highway hazard alerts to 0?")) {
+                        setDisruptions([]);
+                      }
+                    }}
+                    title="Clear active hazard alerts to 0"
+                  >
+                    ✕ Clear
+                  </button>
+                ) : (
+                  <button
+                    className="card-quick-restore-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDisruptions(INITIAL_DISRUPTIONS);
+                      fetchDisruptions();
+                    }}
+                    title="Restore active hazard alerts"
+                  >
+                    ↺ Reset
+                  </button>
+                )}
+              </div>
+            </div>
+            <h3>Active Hazards</h3>
+            <h1>{disruptions.length}</h1>
+            <p>{disruptions.length > 0 ? "Landslides & Floods" : "All clear on highways"}</p>
+          </div>
+
+          {/* Card 5: Field Incident Reports */}
+          <div className="analytics-card card-incidents">
+            <div className="card-top-row">
+              <span className="card-icon">📋</span>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <span className="card-pill incident-pill">{incidentsList.length > 0 ? "Sync Live" : "No Reports"}</span>
+                {incidentsList.length > 0 ? (
+                  <button
+                    className="card-quick-clear-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm("Clear all field incident reports to 0?")) {
+                        setIncidentsList([]);
+                      }
+                    }}
+                    title="Clear field incident reports to 0"
+                  >
+                    ✕ Clear
+                  </button>
+                ) : (
+                  <button
+                    className="card-quick-restore-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fetchIncidents();
+                    }}
+                    title="Sync live field incidents"
+                  >
+                    ↺ Sync
+                  </button>
+                )}
+              </div>
+            </div>
+            <h3>Field Incident Reports</h3>
+            <h1>{incidentsList.length}</h1>
+            <p>{incidentsList.length > 0 ? "Geo-tagged updates" : "No incidents logged"}</p>
+          </div>
         </div>
       </section>
 
@@ -1849,6 +2823,42 @@ function App() {
       <main className="dashboard">
         {/* ROUTE PLANNER PANEL */}
         <section className="route-planner-panel">
+          {emergencyMode && (
+            <div className="sih-emergency-panel">
+              <div className="sih-emergency-badge">
+                <span className="live-siren-dot"></span>
+                <span>🚨 NDMA & MDoNER DISASTER PROTOCOL ENGAGED</span>
+              </div>
+              <h3>Emergency Priority Green Corridor Active</h3>
+              <p>
+                Priority convoy escort active with 100% statutory toll waiver (Disaster Management Act, 2005). System dynamically reroutes logistics around active landslides and structural road failures.
+              </p>
+              <div className="emergency-quick-kpis">
+                <div className="em-chip">
+                  <span>ESCORT STATUS</span>
+                  <strong>{emergencyDetails?.trafficEscortAssigned ? "🚓 Escort Cleared" : "🚓 P1 Priority"}</strong>
+                </div>
+                <div className="em-chip highlight-chip">
+                  <span>TOLL CHARGES</span>
+                  <strong>₹0 (100% Waived)</strong>
+                </div>
+                <div className="em-chip">
+                  <span>CLEARANCE TOKEN</span>
+                  <strong>{emergencyDetails?.greenCorridorCode || "NER-GC-2026-ACTIVE"}</strong>
+                </div>
+                <div className="em-chip">
+                  <span>HAZARD BYPASS</span>
+                  <strong style={{ color: "#16a34a" }}>Active Reroute</strong>
+                </div>
+              </div>
+              {emergencyDetails?.safetyRationale && (
+                <div className="em-rationale">
+                  <strong>Tactical Advisory:</strong> {emergencyDetails.safetyRationale}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="section-box">
             <div className="box-heading">
               <div>
@@ -2999,14 +4009,17 @@ function App() {
       {/* RECOMMENDED OPTIMAL ROUTE CARD */}
       {selectedRoute && (
         <section className="full-width-section">
-          <div className="sih-card route-recommendation-card">
+          <div className={`sih-card route-recommendation-card ${emergencyMode ? "emergency-recommendation" : ""}`}>
             <div className="sih-card-title">
               <div>
-                <span className="kicker-tag">🏆 {t("bestRoute")}</span>
+                <span className={`kicker-tag ${emergencyMode ? "emergency-kicker" : ""}`}>
+                  {emergencyMode ? "🚨 EMERGENCY GREEN CORRIDOR (PRIORITY DISPATCH)" : `🏆 ${t("bestRoute")}`}
+                </span>
                 <h2>{source} ➔ {destination}</h2>
               </div>
               <div className="score-badge">
-                Logistics Score: <strong>{selectedRoute.score || 95}/100</strong>
+                {emergencyMode ? "Emergency Safety Rating: " : "Logistics Score: "}
+                <strong>{selectedRoute.score || 95}/100</strong>
               </div>
             </div>
 
@@ -3016,7 +4029,7 @@ function App() {
                 <strong>{selectedRoute.distanceKm} km</strong>
               </div>
               <div className="metric-box">
-                <span>⏱️ Travel Time (incl. delay)</span>
+                <span>⏱️ {emergencyMode ? "Priority Transit Time" : "Travel Time (incl. delay)"}</span>
                 <strong>{Math.floor(selectedRoute.durationMinutes / 60)}h {selectedRoute.durationMinutes % 60}m</strong>
               </div>
               <div className="metric-box">
@@ -3030,6 +4043,9 @@ function App() {
               <div className="metric-box highlight">
                 <span>💰 Total Delivery Cost</span>
                 <strong>₹{(selectedRoute.totalDeliveryCost || 0).toLocaleString()}</strong>
+                {emergencyMode && selectedRoute.tollCost === 0 && (
+                  <span className="zero-toll-pill">🎉 ₹0 Toll (Disaster Exempt)</span>
+                )}
               </div>
             </div>
 
@@ -3041,9 +4057,41 @@ function App() {
               >
                 {realGpsActive ? "📡 REAL GPS TRACKING ACTIVE" : "📍 ACTIVATE REAL GPS TRACKER"}
               </button>
-              <button className="secondary-button" onClick={saveTrip}>
-                💾 Save Trip to History
+              <button
+                className="complete-route-btn"
+                onClick={completeCurrentRoute}
+                style={{
+                  background: savedTrips.some(t => t.source === source && t.destination === destination && t.status === "Delivered") ? "#15803d" : "#16a34a",
+                  color: "white",
+                  fontWeight: "bold",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 12px rgba(22,163,74,0.3)"
+                }}
+                title="Mark this route as completed to increase the Delivered count in the overview"
+              >
+                {savedTrips.some(t => t.source === source && t.destination === destination && t.status === "Delivered")
+                  ? "✅ Route Delivered"
+                  : "🏁 Complete Route (Mark Delivered)"}
               </button>
+              <button className="secondary-button" onClick={() => saveTrip("Active")}>
+                💾 Save Route (Active)
+              </button>
+              {savedTrips.length > 0 && (
+                <button
+                  className="secondary-button"
+                  onClick={clearTripHistory}
+                  style={{ borderColor: "#ef4444", color: "#dc2626" }}
+                  title="Clear all saved trip history"
+                >
+                  🗑️ Clear Saved History ({savedTrips.length})
+                </button>
+              )}
               <button className="pdf-button" onClick={() => generatePDFReport(null)}>
                 📄 {t("pdfExport")}
               </button>
@@ -3074,8 +4122,10 @@ function App() {
               </div>
               <div className="cost-item">
                 <span>🛣️ Toll & Road Charges</span>
-                <strong>₹{(selectedRoute.tollCost || 0).toLocaleString()}</strong>
-                <small>NER highway maintenance toll</small>
+                <strong>
+                  {selectedRoute.tollCost === 0 ? "₹0 (Toll-Exempt)" : `₹${(selectedRoute.tollCost || 0).toLocaleString()}`}
+                </strong>
+                <small>{selectedRoute.tollCost === 0 ? "Statutory exemption under Disaster Management Act" : "NER highway maintenance toll"}</small>
               </div>
               <div className="cost-item">
                 <span>⛰️ Environmental Delay Impact</span>
@@ -3100,10 +4150,16 @@ function App() {
 
             <div className="comparison-cards-grid">
               {routes.map((rt, idx) => (
-                <div key={rt.id || idx} className={`comparison-card ${selectedRoute?.id === rt.id ? "active-choice" : ""}`}>
+                <div key={rt.id || idx} className={`comparison-card ${selectedRoute?.id === rt.id ? "active-choice" : ""} ${rt.isEmergencyGreenCorridor ? "emergency-opt-card" : ""}`}>
                   <div className="comp-card-header">
                     <span className="route-opt-tag">
-                      {idx === 0 ? "🏆 Option 1 (Recommended)" : idx === 1 ? "🔀 Option 2 (State Bypass)" : `⛰️ Option ${idx + 1} (Mountain Trail)`}
+                      {emergencyMode && rt.isEmergencyGreenCorridor
+                        ? "🚨 Option (Certified Green Corridor)"
+                        : idx === 0
+                        ? "🏆 Option 1 (Primary Corridor)"
+                        : idx === 1
+                        ? "🔀 Option 2 (State Bypass)"
+                        : `⛰️ Option ${idx + 1} (Mountain Trail)`}
                     </span>
                     <strong className="comp-score">{rt.score}/100 Score</strong>
                   </div>
@@ -3112,8 +4168,14 @@ function App() {
                     <div><span>Distance:</span> <strong>{rt.distanceKm} km</strong></div>
                     <div><span>Transit Time:</span> <strong>{Math.floor(rt.durationMinutes / 60)}h {rt.durationMinutes % 60}m</strong></div>
                     <div><span>Risk Probability:</span> <strong style={{ color: rt.riskProbability >= 60 ? "#dc2626" : "#16a34a" }}>{rt.riskProbability || 35}%</strong></div>
-                    <div><span>Total Cost:</span> <strong>₹{(rt.totalDeliveryCost || 0).toLocaleString()}</strong></div>
+                    <div><span>Total Cost:</span> <strong>₹{(rt.totalDeliveryCost || 0).toLocaleString()}</strong> {rt.tollCost === 0 && <span style={{ color: "#16a34a", fontSize: "11px", fontWeight: "bold" }}>(Zero Toll)</span>}</div>
                   </div>
+
+                  {rt.advisory && (
+                    <div style={{ fontSize: "11px", color: "#475569", margin: "8px 0", background: "#f8fafc", padding: "6px", borderRadius: "6px" }}>
+                      {rt.advisory}
+                    </div>
+                  )}
 
                   <button
                     className={`select-route-btn ${selectedRoute?.id === rt.id ? "selected" : ""}`}
@@ -3237,6 +4299,47 @@ function App() {
           ))}
         </div>
       </section>
+
+      {/* FLOATING MULTILINGUAL TOAST NOTIFICATION */}
+      {activeToast && (
+        <div className={`multilingual-toast-container ${activeToast.severity || "warning"}`}>
+          <div className="toast-icon">
+            {activeToast.severity === "emergency" ? "🚨" : activeToast.severity === "critical" ? "⚠️" : activeToast.severity === "success" ? "✅" : "📢"}
+          </div>
+          <div className="toast-content">
+            <div className="toast-header">
+              <span className="toast-category-badge">{activeToast.category || "ALERT"}</span>
+              <strong className="toast-title">
+                {activeToast.titles?.[selectedLang] || activeToast.titles?.English || activeToast.title || "Regional Alert"}
+              </strong>
+            </div>
+            <p className="toast-message">
+              {activeToast.messages?.[selectedLang] || activeToast.messages?.English || activeToast.message}
+            </p>
+            <div className="toast-meta">
+              <span>📍 {activeToast.corridor || "NER Corridor"}</span>
+              <span>🕒 {activeToast.timestamp || "Just now"}</span>
+            </div>
+          </div>
+          <div className="toast-actions">
+            <button
+              type="button"
+              className="toast-voice-btn"
+              title="Voice announcement in selected language"
+              onClick={() => playVoiceAlertForNotif(activeToast)}
+            >
+              🔊
+            </button>
+            <button
+              type="button"
+              className="toast-close-btn"
+              onClick={() => setActiveToast(null)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* FOOTER ACTIONS */}
       <footer className="footer-bar">

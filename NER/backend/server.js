@@ -196,6 +196,169 @@ let FLEET_VEHICLES = [
   }
 ];
 
+let SCHEDULED_TRIPS = [
+  {
+    id: "TRIP-201",
+    routeCode: "NH-27-GS",
+    routeName: "Guwahati to Silchar Expressway Corridor",
+    source: "Guwahati, Assam",
+    destination: "Silchar, Assam",
+    highway: "NH-27",
+    state: "ASSAM",
+    vehicleName: "Medical Relief Truck Alpha",
+    vehicleType: "mediumTruck",
+    status: "Active",
+    driver: "Rajesh Kalita",
+    cargo: "Essential Medicines & Vaccines",
+    departureTime: "06:30 AM",
+    eta: "02:15 PM"
+  },
+  {
+    id: "TRIP-202",
+    routeCode: "NH-29-DK",
+    routeName: "Dimapur to Kohima Mountain Corridor",
+    source: "Dimapur, Nagaland",
+    destination: "Kohima, Nagaland",
+    highway: "NH-29",
+    state: "NAGALAND",
+    vehicleName: "Food Supply Convoy Bravo",
+    vehicleType: "heavyTruck",
+    status: "Active",
+    driver: "Biren Gogoi",
+    cargo: "Rice, Pulses & Ration Kits",
+    departureTime: "07:45 AM",
+    eta: "11:30 AM"
+  },
+  {
+    id: "TRIP-203",
+    routeCode: "NH-06-SJ",
+    routeName: "Shillong to Jowai Mountain Highway Pass",
+    source: "Shillong, Meghalaya",
+    destination: "Jowai, Meghalaya",
+    highway: "NH-06",
+    state: "MEGHALAYA",
+    vehicleName: "Disaster Emergency Tanker Charlie",
+    vehicleType: "deliveryVan",
+    status: "Active",
+    driver: "Subhash Roy",
+    cargo: "Clean Drinking Water & Relief Kits",
+    departureTime: "08:15 AM",
+    eta: "01:00 PM"
+  },
+  {
+    id: "TRIP-204",
+    routeCode: "NH-37-IJ",
+    routeName: "Imphal to Jiribam Highway",
+    source: "Imphal, Manipur",
+    destination: "Jiribam, Manipur",
+    highway: "NH-37",
+    state: "MANIPUR",
+    vehicleName: "Northeast Logistics Carrier 04",
+    vehicleType: "heavyTruck",
+    status: "Active",
+    driver: "T. Singh",
+    cargo: "Fuel & Power Generation Spares",
+    departureTime: "07:00 AM",
+    eta: "03:45 PM"
+  },
+  {
+    id: "TRIP-205",
+    routeCode: "NH-10-SG",
+    routeName: "Siliguri to Gangtok Axis",
+    source: "Siliguri, West Bengal",
+    destination: "Gangtok, Sikkim",
+    highway: "NH-10",
+    state: "SIKKIM",
+    vehicleName: "Himalayan Express Van 05",
+    vehicleType: "deliveryVan",
+    status: "Active",
+    driver: "Karma Bhutia",
+    cargo: "High-Altitude Medical Equipment",
+    departureTime: "08:30 AM",
+    eta: "05:15 PM"
+  },
+  {
+    id: "TRIP-206",
+    routeCode: "NH-08-AS",
+    routeName: "Agartala to Sabroom Trade Corridor",
+    source: "Agartala, Tripura",
+    destination: "Sabroom, Tripura",
+    highway: "NH-8",
+    state: "TRIPURA",
+    vehicleName: "Tripura Express Logistics 06",
+    vehicleType: "mediumTruck",
+    status: "Active",
+    driver: "Debabrata Deb",
+    cargo: "Agricultural & Food Supplies",
+    departureTime: "09:00 AM",
+    eta: "02:30 PM"
+  },
+  {
+    id: "TRIP-207",
+    routeCode: "NH-13-TB",
+    routeName: "Tezpur to Bomdila & Tawang Route",
+    source: "Tezpur, Assam",
+    destination: "Tawang, Arunachal Pradesh",
+    highway: "NH-13",
+    state: "ARUNACHAL PRADESH",
+    vehicleName: "Arunachal Frontier Carrier 07",
+    vehicleType: "heavyTruck",
+    status: "Active",
+    driver: "Pema Dorjee",
+    cargo: "Winter Clothes & Medical Supplies",
+    departureTime: "05:00 AM",
+    eta: "04:30 PM"
+  },
+  {
+    id: "TRIP-208",
+    routeCode: "NH-54-AL",
+    routeName: "Aizawl to Lunglei Transit",
+    source: "Aizawl, Mizoram",
+    destination: "Lunglei, Mizoram",
+    highway: "NH-54",
+    state: "MIZORAM",
+    vehicleName: "Mizoram Relief Convoy 08",
+    vehicleType: "deliveryVan",
+    status: "Active",
+    driver: "Lalrinzuala",
+    cargo: "Infant Nutrition & Clean Water",
+    departureTime: "06:45 AM",
+    eta: "04:00 PM"
+  },
+  {
+    id: "TRIP-209",
+    routeCode: "NH-715-JD",
+    routeName: "Jorhat to Dibrugarh Transit Corridor",
+    source: "Jorhat, Assam",
+    destination: "Dibrugarh, Assam",
+    highway: "NH-715",
+    state: "ASSAM",
+    vehicleName: "Brahmaputra Supply Van 09",
+    vehicleType: "mediumTruck",
+    status: "Active",
+    driver: "Manish Borah",
+    cargo: "Surgical Equipment & Blood Packets",
+    departureTime: "08:10 AM",
+    eta: "01:45 PM"
+  },
+  {
+    id: "TRIP-210",
+    routeCode: "NH-27-GN",
+    routeName: "Guwahati to Nagaon Supply Shuttle",
+    source: "Guwahati, Assam",
+    destination: "Nagaon, Assam",
+    highway: "NH-27",
+    state: "ASSAM",
+    vehicleName: "Central Assam Express 10",
+    vehicleType: "mediumTruck",
+    status: "Active",
+    driver: "Hiren Sharma",
+    cargo: "Dry Provisions & Water Purification Kits",
+    departureTime: "09:30 AM",
+    eta: "12:15 PM"
+  }
+];
+
 const ACTIVE_DISRUPTIONS = [
   {
     id: "DIS-01",
@@ -590,6 +753,78 @@ app.get("/api/fleet", (req, res) => {
   res.json({ success: true, fleet: FLEET_VEHICLES });
 });
 
+/* =========================================================
+   SCHEDULED TRIPS & ROUTE STATS ENDPOINTS
+========================================================= */
+app.get("/api/trips", (req, res) => {
+  const { search = "", status = "" } = req.query;
+  let filtered = [...SCHEDULED_TRIPS];
+
+  if (search && search.trim()) {
+    const q = search.toLowerCase().trim();
+    filtered = filtered.filter(t =>
+      (t.routeName && t.routeName.toLowerCase().includes(q)) ||
+      (t.source && t.source.toLowerCase().includes(q)) ||
+      (t.destination && t.destination.toLowerCase().includes(q)) ||
+      (t.highway && t.highway.toLowerCase().includes(q)) ||
+      (t.state && t.state.toLowerCase().includes(q)) ||
+      (t.driver && t.driver.toLowerCase().includes(q)) ||
+      (t.vehicleName && t.vehicleName.toLowerCase().includes(q)) ||
+      (t.cargo && t.cargo.toLowerCase().includes(q)) ||
+      (t.status && t.status.toLowerCase().includes(q))
+    );
+  }
+
+  if (status && status !== "All") {
+    filtered = filtered.filter(t => t.status.toLowerCase() === status.toLowerCase());
+  }
+
+  const totalTrips = filtered.length;
+  const activeTrips = filtered.filter(t => t.status.toLowerCase() === "active" || t.status.toLowerCase() === "in transit").length;
+  const deliveredTrips = filtered.filter(t => t.status.toLowerCase() === "delivered" || t.status.toLowerCase() === "completed").length;
+
+  res.json({
+    success: true,
+    totalTrips,
+    activeTrips,
+    deliveredTrips,
+    trips: filtered
+  });
+});
+
+app.post("/api/trips", (req, res) => {
+  const { source, destination, vehicle, distanceKm, durationMinutes, totalDeliveryCost, status } = req.body;
+  const newTrip = {
+    id: `TRIP-${Date.now()}`,
+    routeCode: "NER-CUSTOM",
+    routeName: `${source || "Origin"} to ${destination || "Destination"}`,
+    source: source || "Guwahati, Assam",
+    destination: destination || "Silchar, Assam",
+    highway: "NER Corridor",
+    state: "ASSAM",
+    vehicleName: vehicle === "heavyTruck" ? "Heavy Truck (15T)" : vehicle === "deliveryVan" ? "Emergency Van (2.5T)" : "Medium Truck (7.5T)",
+    vehicleType: vehicle || "mediumTruck",
+    status: status || "Active",
+    driver: "Assigned Fleet Officer",
+    cargo: "Essential Supply Convoy",
+    departureTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    eta: "In Transit"
+  };
+  SCHEDULED_TRIPS.unshift(newTrip);
+  res.json({ success: true, trip: newTrip });
+});
+
+app.post("/api/trips/:id/complete", (req, res) => {
+  const { id } = req.params;
+  const trip = SCHEDULED_TRIPS.find(t => t.id === id);
+  if (trip) {
+    trip.status = "Delivered";
+    trip.eta = `Delivered (${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`;
+    return res.json({ success: true, trip });
+  }
+  res.status(404).json({ success: false, message: "Trip not found" });
+});
+
 app.post("/api/fleet/update-gps", (req, res) => {
   const { vehicleId, lat, lon, speed, status } = req.body;
   if (!vehicleId || !lat || !lon) {
@@ -633,6 +868,107 @@ app.post("/api/incidents", (req, res) => {
 
   FIELD_INCIDENTS.unshift(incident);
   res.json({ success: true, incident });
+});
+
+/* =========================================================
+   MULTILINGUAL NOTIFICATIONS & ALERTS ENDPOINTS
+========================================================= */
+let MULTILINGUAL_NOTIFICATIONS = [
+  {
+    id: "NOTIF-101",
+    category: "disaster",
+    severity: "critical",
+    highway: "NH-27 (Badarpur)",
+    timestamp: "10:15 AM",
+    isRead: false,
+    title: {
+      English: "🚨 CRITICAL: Flash Flood Alert on NH-27 Badarpur",
+      Hindi: "🚨 अत्यंत गंभीर: NH-27 बदरपुर पर अचानक बाढ़ की चेतावनी",
+      Assamese: "🚨 জৰুৰী সতৰ্কতা: NH-27 বদৰপুৰত নদীৰ পানী উপচি পৰাৰ সতৰ্কবাণী",
+      Bengali: "🚨 জরুরি সতর্কতা: NH-27 বদরপুরে আকস্মিক বন্যার লাল সতর্কতা"
+    },
+    message: {
+      English: "Barak river water levels exceed danger mark by +1.6m near Badarpur ramp. Delivery vans redirected via Haflong Mountain bypass.",
+      Hindi: "बदरपुर रैंप के पास बराक नदी का जलस्तर खतरे के निशान से +1.6 मीटर ऊपर है। डिलीवरी वैन को हाफलोंग बाईपास से भेजा जा रहा है।",
+      Assamese: "বদৰপুৰ সমীপত বৰাক নদীৰ পানী বিপদসীমাৰ পৰা ১.৬ মিটাৰ ওপৰত বৈছে। সৰু বাহনসমূহ হাফলং পথেৰে ঘূৰাই দিয়া হৈছে।",
+      Bengali: "বদরপুরের কাছে বরাক নদীর জলস্তর বিপদসীমার ১.৬ মিটার উপর দিয়ে বইছে। ছোট পণ্যবাহী যান হাফলং বাইপাস দিয়ে ঘুরিয়ে দেওয়া হয়েছে।"
+    }
+  },
+  {
+    id: "NOTIF-102",
+    category: "road",
+    severity: "warning",
+    highway: "NH-06 (Meghalaya)",
+    timestamp: "09:40 AM",
+    isRead: false,
+    title: {
+      English: "⚠️ CAUTION: Active Landslide Slip on NH-06 Jowai Pass",
+      Hindi: "⚠️ सावधानी: मेघालय NH-06 जोवाई दर्रे पर सक्रिय भूस्खलन",
+      Assamese: "⚠️ সতৰ্কতা: মেঘালয়ৰ NH-06 যোৱাই পাছত সক্ৰিয় ভূমিস্খলন",
+      Bengali: "⚠️ সতর্কতা: মেঘালয়ের NH-06 জোওয়াই পাসে সক্রিয় ভূমিধস"
+    },
+    message: {
+      English: "Single lane clearance in progress by BRO. Heavy commercial vehicles (>12 Tons) delayed by ~75 mins. Drive with caution.",
+      Hindi: "सीमा सड़क संगठन (BRO) द्वारा सिंगल लेन खोली जा रही है। भारी ट्रकों में लगभग 75 मिनट का विलंब संभव है।",
+      Assamese: "BRO ৰ দ্বাৰা একক লেন চাফা কৰাৰ কাম চলি আছে। ১২ টনৰ অধিক গধুৰ বাহনৰ যাত্ৰা প্ৰায় ৭৫ মিনিট বিলম্ব হ'ব পাৰে।",
+      Bengali: "BRO দ্বারা এক লেনের যান চলাচল সচল করা হচ্ছে। ১২ টনের বেশি ভারী ট্রাকে ৭৫ মিনিট বিলম্ব হতে পারে।"
+    }
+  },
+  {
+    id: "NOTIF-103",
+    category: "weather",
+    severity: "warning",
+    highway: "NH-10 (Sikkim)",
+    timestamp: "08:55 AM",
+    isRead: false,
+    title: {
+      English: "🌧️ WEATHER: Rockfall Warning on NH-10 Teesta Corridor",
+      Hindi: "🌧️ मौसम चेतावनी: NH-10 तीस्ता कॉरिडोर पर चट्टान गिरने का जोखिम",
+      Assamese: "🌧️ বতৰৰ জাননী: তিস্তা কৰিড'ৰৰ NH-10 ত শিলাবৃষ্টি আৰু শিল খহি পৰাৰ সম্ভাৱনা",
+      Bengali: "🌧️ আবহাওয়া সতর্কতা: তিস্তা করিডোরে NH-10 এ পাথর ধসের সতর্কতা"
+    },
+    message: {
+      English: "High rainfall triggered boulder roll near Sevoke. Night transit restricted for heavy goods convoys.",
+      Hindi: "सेवोक के पास भारी वर्षा से चट्टानें गिरीं। रात के समय भारी मालवाहक काफिले की आवाजाही प्रतिबंधित है।",
+      Assamese: "চেভকৰ সমীপত প্ৰবল বৰষুণৰ ফলত শিল খহিছে। নিশাৰ ভাগত গধুৰ সামগ্ৰী পৰিবহণ স্থগিত কৰা হৈছে।",
+      Bengali: "সেভকের কাছে ভারী বৃষ্টিতে পাথর ধস নেমেছে। রাতের বেলা ভারী পণ্যবাহী কনভয় চলাচল নিষিদ্ধ।"
+    }
+  },
+  {
+    id: "NOTIF-104",
+    category: "fleet",
+    severity: "info",
+    highway: "NH-27-GS",
+    timestamp: "07:30 AM",
+    isRead: true,
+    title: {
+      English: "🚚 FLEET DISPATCH: Emergency Medical Convoy Alpha En Route",
+      Hindi: "🚚 फ्लीट प्रेषण: आवश्यक चिकित्सा राहत काफिला अल्फा रवाना",
+      Assamese: "🚚 ফ্লিট সৰবৰাহ: জৰুৰী চিকিৎসা সাহায্য বাহন আলফা ৰাওনা হ'ল",
+      Bengali: "🚚 ফ্লিট আপডেট: জরুরী মেডিকেল ত্রাণ কনভয় আলফা রওনা হয়েছে"
+    },
+    message: {
+      English: "Truck NER-TRIP-201 carrying vital vaccines & medicines departed Guwahati Central Hub. Real GPS Tracking Active.",
+      Hindi: "महत्वपूर्ण टीके और दवाएं लेकर ट्रक NER-TRIP-201 गुवाहाटी हब से रवाना हुआ। लाइव जीपीएस ट्रैकिंग चालू है।",
+      Assamese: "প্ৰয়োজনীয় ঔষধ আৰু ভেকচিন লৈ ট্ৰাক NER-TRIP-201 গুৱাহাটীৰ পৰা যাত্ৰা আৰম্ভ কৰিছে। লাইভ GPS সক্ৰিয়।",
+      Bengali: "জরুরী ওষুধ ও ভ্যাকসিন সহ ট্রাক NER-TRIP-201 গুয়াহাটি থেকে রওনা হয়েছে। লাইভ জিপিএস সক্রিয়।"
+    }
+  }
+];
+
+app.get("/api/notifications", (req, res) => {
+  res.json({ success: true, notifications: MULTILINGUAL_NOTIFICATIONS });
+});
+
+app.post("/api/notifications", (req, res) => {
+  const newNotif = {
+    id: `NOTIF-${Date.now()}`,
+    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    isRead: false,
+    ...req.body
+  };
+  MULTILINGUAL_NOTIFICATIONS.unshift(newNotif);
+  res.json({ success: true, notification: newNotif });
 });
 
 app.get("/api/ml-risk", (req, res) => {
@@ -1193,7 +1529,8 @@ app.post("/api/fleet/selected-route-tracking/telemetry", (req, res) => {
 
 /* DYNAMIC ROUTE CALCULATION FOR ANY SOURCE & DESTINATION CITIES */
 app.get("/api/route", async (req, res) => {
-  const { source = "Guwahati, Assam", destination = "Silchar, Assam", vehicle = "mediumTruck" } = req.query;
+  const { source = "Guwahati, Assam", destination = "Silchar, Assam", vehicle = "mediumTruck", emergency = "false" } = req.query;
+  const isEmergency = emergency === "true" || emergency === true || emergency === "1";
 
   // 1. Geocode Source and Destination Coordinates
   const srcCoords = await geocodeLocation(source);
@@ -1232,19 +1569,41 @@ app.get("/api/route", async (req, res) => {
   const destDistrict = destination.split(",")[0].trim();
   const mlRiskPrediction = predictMLRiskWithPython("NER", destDistrict, 190);
 
-  const envDelay = mlRiskPrediction.probabilityPercent > 50 ? 45 : 15;
-  const totalDuration = (osrmDurationMin || Math.round((calcDistanceKm / 45) * 60)) + envDelay;
+  // Emergency Green Corridor adjustments:
+  // - Convoy escort reduces traffic queue delay and environmental bottleneck delay by 50%
+  // - Statutory 100% Toll exemption under Disaster Management Act 2005
+  const baseEnvDelay = mlRiskPrediction.probabilityPercent > 50 ? 45 : 15;
+  const envDelay = isEmergency ? Math.round(baseEnvDelay * 0.5) : baseEnvDelay;
+  const transitSpeed = isEmergency ? 55 : 45; // Police green corridor escort provides higher sustained flow speed
+  const baseDriveMinutes = osrmDurationMin ? (isEmergency ? Math.round(osrmDurationMin * 0.85) : osrmDurationMin) : Math.round((calcDistanceKm / transitSpeed) * 60);
+  const totalDuration = baseDriveMinutes + envDelay;
 
   const fuelRate = vehicle === "heavyTruck" ? 4.5 : vehicle === "mediumTruck" ? 6.0 : 9.5;
   const fuelLitres = Math.round((calcDistanceKm / fuelRate) * 10) / 10;
   const fuelCost = Math.round(fuelLitres * 95);
   const driverCost = Math.round((totalDuration / 60) * 200);
-  const tollCost = Math.round(calcDistanceKm * 1.2);
-  const totalCost = fuelCost + driverCost + tollCost + (envDelay * 15);
+  const tollCost = isEmergency ? 0 : Math.round(calcDistanceKm * 1.2); // 100% TOLL EXEMPTION FOR EMERGENCY RELIEF CONVOYS
+  const totalCost = fuelCost + driverCost + tollCost + (envDelay * (isEmergency ? 5 : 15));
 
+  // 4. Cross-reference infrastructure accessibility alerts along corridor
+  const vehicleWeightTons = vehicle === "heavyTruck" ? 15 : vehicle === "mediumTruck" ? 7.5 : 2.5;
+  const infrastructureAlerts = NER_INFRASTRUCTURE_ACCESSIBILITY.filter(infra => {
+    const isStateMatch = infra.state.toUpperCase() === "ASSAM" || infra.state.toUpperCase() === "MEGHALAYA" || source.toUpperCase().includes(infra.state) || destination.toUpperCase().includes(infra.state);
+    const isBlockedOrCaution = infra.status !== "FULLY_ACCESSIBLE";
+    const exceedsWeight = infra.maxWeightCapacityTons > 0 && vehicleWeightTons > infra.maxWeightCapacityTons;
+    return isStateMatch && (isBlockedOrCaution || exceedsWeight);
+  });
+
+  const hasBlockedInfra = infrastructureAlerts.some(a => a.status === "BLOCKED" || a.status === "UNDER_REPAIR");
+  const isHighDisasterRisk = mlRiskPrediction.risk === "HIGH" || mlRiskPrediction.probabilityPercent >= 52 || hasBlockedInfra;
+
+  // Primary Route Object
   const primaryRoute = {
     id: 1,
-    name: `${source} ➔ ${destination} (Primary Corridor)`,
+    name: isEmergency
+      ? (isHighDisasterRisk ? `${source} ➔ ${destination} (⚠️ Primary Highway - High Hazard Warning)` : `${source} ➔ ${destination} (🚨 Emergency Direct Green Corridor)`)
+      : `${source} ➔ ${destination} (Primary Corridor)`,
+    corridorType: "PRIMARY",
     distanceKm: calcDistanceKm,
     durationMinutes: totalDuration,
     environmentalDelayMinutes: envDelay,
@@ -1252,10 +1611,17 @@ app.get("/api/route", async (req, res) => {
     fuelCost,
     driverCost,
     tollCost,
+    tollExempt: isEmergency,
     totalDeliveryCost: totalCost,
     riskLevel: mlRiskPrediction.risk,
     riskProbability: mlRiskPrediction.probabilityPercent,
-    score: Math.max(60, 100 - Math.round(mlRiskPrediction.probabilityPercent * 0.4)),
+    score: isEmergency
+      ? (isHighDisasterRisk ? 48 : 94)
+      : Math.max(60, 100 - Math.round(mlRiskPrediction.probabilityPercent * 0.4)),
+    isEmergencyGreenCorridor: isEmergency && !isHighDisasterRisk,
+    advisory: isEmergency && isHighDisasterRisk
+      ? `CRITICAL HAZARD WARNING: Primary highway exhibits severe risk (${mlRiskPrediction.probabilityPercent}% disruption probability) and active bottlenecks. Divert to Emergency State Bypass.`
+      : mlRiskPrediction.advisory,
     geometry: {
       coordinates // [[lon, lat], ...]
     }
@@ -1271,37 +1637,47 @@ app.get("/api/route", async (req, res) => {
   ];
 
   const bypassDistance = Math.round(calcDistanceKm * 1.12 * 10) / 10;
-  const bypassDuration = totalDuration + 20;
+  const bypassEnvDelay = isEmergency ? 5 : 10;
+  const bypassDuration = isEmergency ? totalDuration + 8 : totalDuration + 20;
+  const bypassTollCost = isEmergency ? 0 : Math.round(bypassDistance * 0.9);
+  const bypassFuelCost = Math.round((bypassDistance / fuelRate) * 95);
+  const bypassDriverCost = Math.round((bypassDuration / 60) * 200);
 
   const bypassRoute = {
     id: 2,
-    name: `${source} ➔ ${destination} (State Bypass)`,
+    name: isEmergency
+      ? `${source} ➔ ${destination} (🚨 Emergency Safe Bypass Corridor)`
+      : `${source} ➔ ${destination} (State Bypass)`,
+    corridorType: "BYPASS",
     distanceKm: bypassDistance,
     durationMinutes: bypassDuration,
-    environmentalDelayMinutes: 10,
+    environmentalDelayMinutes: bypassEnvDelay,
     fuelLitres: Math.round((bypassDistance / fuelRate) * 10) / 10,
-    fuelCost: Math.round((bypassDistance / fuelRate) * 95),
-    driverCost: Math.round((bypassDuration / 60) * 200),
-    tollCost: Math.round(bypassDistance * 0.9),
-    totalDeliveryCost: Math.round((bypassDistance / fuelRate) * 95) + Math.round((bypassDuration / 60) * 200) + Math.round(bypassDistance * 0.9),
+    fuelCost: bypassFuelCost,
+    driverCost: bypassDriverCost,
+    tollCost: bypassTollCost,
+    tollExempt: isEmergency,
+    totalDeliveryCost: bypassFuelCost + bypassDriverCost + bypassTollCost,
     riskLevel: "LOW",
-    riskProbability: 28,
-    score: 86,
+    riskProbability: 24,
+    score: isEmergency ? (isHighDisasterRisk ? 98 : 88) : 86,
+    isEmergencyGreenCorridor: isEmergency && isHighDisasterRisk,
+    advisory: isEmergency && isHighDisasterRisk
+      ? `RECOMMENDED EMERGENCY ROUTE: Certified zero-toll green corridor bypassing high-risk landslide zones and damaged structures. Rapid escort clearance active.`
+      : "Standard alternate state bypass with stable road gradient.",
     geometry: {
       coordinates: bypassCoords
     }
   };
 
-  // 4. Cross-reference infrastructure accessibility alerts along corridor
-  const vehicleWeightTons = vehicle === "heavyTruck" ? 15 : vehicle === "mediumTruck" ? 7.5 : 2.5;
-  const infrastructureAlerts = NER_INFRASTRUCTURE_ACCESSIBILITY.filter(infra => {
-    const isStateMatch = infra.state.toUpperCase() === "ASSAM" || infra.state.toUpperCase() === "MEGHALAYA" || source.toUpperCase().includes(infra.state) || destination.toUpperCase().includes(infra.state);
-    const isBlockedOrCaution = infra.status !== "FULLY_ACCESSIBLE";
-    const exceedsWeight = infra.maxWeightCapacityTons > 0 && vehicleWeightTons > infra.maxWeightCapacityTons;
-    return isStateMatch && (isBlockedOrCaution || exceedsWeight);
-  });
+  // 5. Intelligent Emergency Mode Decision Engine:
+  // In emergency mode, if primary route has high landslide/flood risk or blocked infrastructure,
+  // automatically recommend the SAFE EMERGENCY BYPASS CORRIDOR to protect critical supplies!
+  const recommendedRoute = isEmergency
+    ? (isHighDisasterRisk ? bypassRoute : primaryRoute)
+    : (isHighDisasterRisk && bypassRoute.score > primaryRoute.score ? bypassRoute : primaryRoute);
 
-  // 5. Matched real traffic corridor metrics
+  // 6. Matched real traffic corridor metrics
   const matchedTraffic = NER_REALTIME_TRAFFIC.find(t =>
     source.toUpperCase().includes(t.state) || destination.toUpperCase().includes(t.state)
   ) || NER_REALTIME_TRAFFIC[0];
@@ -1312,17 +1688,32 @@ app.get("/api/route", async (req, res) => {
     destination,
     vehicle,
     vehicleWeightTons,
-    recommendedRoute: primaryRoute,
-    routes: [primaryRoute, bypassRoute],
+    isEmergencyMode: isEmergency,
+    recommendedRoute,
+    routes: isEmergency && isHighDisasterRisk ? [bypassRoute, primaryRoute] : [primaryRoute, bypassRoute],
     destRiskInfo: mlRiskPrediction,
     infrastructureAlerts,
+    emergencyDetails: {
+      isEmergencyActive: isEmergency,
+      greenCorridorCode: isEmergency ? `NER-GC-2026-${Math.floor(1000 + Math.random() * 9000)}` : null,
+      priorityLevel: isEmergency ? "P1 - LIFE SAVING RELIEF DISPATCH" : "STANDARD COMMODITY",
+      tollWaiverStatus: isEmergency ? "100% EXEMPT (Disaster Management Act 2005)" : "STANDARD TOLL CHARGED",
+      trafficEscortAssigned: isEmergency,
+      clearanceAgency: "MDoNER & NDMA Disaster Logistics Command",
+      avoidedHazardsCount: isEmergency ? infrastructureAlerts.filter(a => a.status === "BLOCKED" || a.status === "PASSABLE_CAUTION").length : 0,
+      safetyRationale: isEmergency
+        ? (isHighDisasterRisk
+          ? "Rerouted via Emergency Bypass Corridor to avoid critical landslide hazards and structural bridge blockages on NH-06/NH-27."
+          : "Direct Green Corridor cleared with police convoy escort priority.")
+        : "Standard commercial route optimization."
+    },
     trafficSummary: {
       corridor: matchedTraffic.highwayName,
-      congestionLevel: matchedTraffic.congestionLevel,
-      congestionIndexPercent: matchedTraffic.congestionIndexPercent,
-      jamFactor: matchedTraffic.jamFactor,
-      averageSpeedKmH: matchedTraffic.averageSpeedKmH,
-      trafficDelayMinutes: matchedTraffic.delayMinutes,
+      congestionLevel: isEmergency ? "Green Corridor Cleared" : matchedTraffic.congestionLevel,
+      congestionIndexPercent: isEmergency ? Math.round(matchedTraffic.congestionIndexPercent * 0.45) : matchedTraffic.congestionIndexPercent,
+      jamFactor: isEmergency ? Math.round(matchedTraffic.jamFactor * 0.45 * 10) / 10 : matchedTraffic.jamFactor,
+      averageSpeedKmH: isEmergency ? Math.min(65, matchedTraffic.averageSpeedKmH + 18) : matchedTraffic.averageSpeedKmH,
+      trafficDelayMinutes: isEmergency ? Math.round(matchedTraffic.delayMinutes * 0.4) : matchedTraffic.delayMinutes,
       activeBottlenecks: matchedTraffic.bottlenecks
     },
     sourceCoords: { lat: srcLat, lon: srcLon },
