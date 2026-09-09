@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -1416,6 +1416,7 @@ function App() {
   const [gpsPosition, setGpsPosition] = useState(null);
 
   const [language, setLanguage] = useState("English");
+  const [activeTab, setActiveTab] = useState("overview");
   const [districtFilter, setDistrictFilter] = useState("All");
   const [districtStateFilter, setDistrictStateFilter] = useState("All");
   const [emergencyMode, setEmergencyMode] = useState(false);
@@ -1645,6 +1646,56 @@ function App() {
   const [incidentLocationName, setIncidentLocationName] = useState("Ratacherra Highway Pass");
   const [incidentPhoto, setIncidentPhoto] = useState(null);
   const [incidentPhotoPreview, setIncidentPhotoPreview] = useState(null);
+  
+  // Live Camera & File Attachment Refs & State
+  const videoRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [photoSourceType, setPhotoSourceType] = useState(null);
+
+  const startCameraStream = async () => {
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        setCameraStream(stream);
+        setCameraActive(true);
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        }, 100);
+      } else {
+        cameraInputRef.current?.click();
+      }
+    } catch (err) {
+      console.warn("Webcam access error:", err);
+      cameraInputRef.current?.click();
+    }
+  };
+
+  const stopCameraStream = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+    setCameraActive(false);
+  };
+
+  const captureWebcamPhoto = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth || 640;
+    canvas.height = videoRef.current.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    setIncidentPhoto(dataUrl);
+    setIncidentPhotoPreview(dataUrl);
+    setPhotoSourceType("Live Camera Snapshot");
+    stopCameraStream();
+  };
   const [incidentQueue, setIncidentQueue] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("nerIncidentQueue")) || [];
@@ -2488,163 +2539,6 @@ function App() {
             <option>Bengali</option>
           </select>
 
-          {/* REAL MULTILINGUAL NOTIFICATION & ALERT BELL */}
-          <div className="notif-bell-container">
-            <button
-              className={`notif-bell-button ${hasCriticalUnread ? "bell-critical-alert" : ""}`}
-              onClick={() => setShowNotifCenter(!showNotifCenter)}
-              title={`${t("notifTitle")} (${unreadAlertCount} unread)`}
-            >
-              <span className="bell-icon">🔔</span>
-              <span className="bell-label">{t("notifBell")}</span>
-              {unreadAlertCount > 0 && (
-                <span className={`bell-badge ${hasCriticalUnread ? "badge-critical-pulse" : ""}`}>
-                  {unreadAlertCount}
-                </span>
-              )}
-            </button>
-
-            {/* NOTIFICATION CENTER DROPDOWN PANEL */}
-            {showNotifCenter && (
-              <div className="notif-dropdown-panel" onClick={(e) => e.stopPropagation()}>
-                <div className="notif-panel-header">
-                  <div className="notif-header-title">
-                    <span className="notif-header-icon">🚨</span>
-                    <div>
-                      <h4>{t("notifTitle")}</h4>
-                      <p>{t("notifSubtitle")} • <strong>{language}</strong></p>
-                    </div>
-                  </div>
-                  <button className="notif-close-btn" onClick={() => setShowNotifCenter(false)}>✕</button>
-                </div>
-
-                {/* NOTIFICATION CONTROLS BAR */}
-                <div className="notif-controls-bar">
-                  <button
-                    className={`notif-toggle-chip ${notifSoundEnabled ? "active-chip" : ""}`}
-                    onClick={() => setNotifSoundEnabled(!notifSoundEnabled)}
-                    title="Toggle Audio Chime on alert"
-                  >
-                    {notifSoundEnabled ? "🔊 Chime: ON" : "🔇 Chime: OFF"}
-                  </button>
-                  <button
-                    className={`notif-toggle-chip ${notifVoiceEnabled ? "active-chip voice-active" : ""}`}
-                    onClick={() => {
-                      const nextVoice = !notifVoiceEnabled;
-                      setNotifVoiceEnabled(nextVoice);
-                      if (nextVoice) {
-                        speakAlertText(language === "Hindi" ? "आवाज चेतावनी सक्रिय" : language === "Assamese" ? "কণ্ঠস্বৰ সতৰ্কতা সক্ৰিয়" : language === "Bengali" ? "ভয়েস অ্যালার্ট সক্রিয়" : "Multilingual Voice Alerts Active", language);
-                      }
-                    }}
-                    title="Toggle Text-to-Speech Voice Alert Announcement in selected language"
-                  >
-                    🗣️ {t("voiceAlerts")}: {notifVoiceEnabled ? "ON" : "OFF"}
-                  </button>
-                  {unreadAlertCount > 0 && (
-                    <button className="notif-action-text-btn" onClick={markAllNotifsAsRead}>
-                      ✓ {t("markAllRead")}
-                    </button>
-                  )}
-                  <button className="notif-test-btn" onClick={sendTestMultilingualAlert}>
-                    📢 {t("testAlert")}
-                  </button>
-                </div>
-
-                {/* CATEGORY FILTER TABS */}
-                <div className="notif-filter-tabs">
-                  {["All", "disaster", "weather", "road", "fleet"].map((cat) => (
-                    <button
-                      key={cat}
-                      className={`notif-tab ${notifCategoryFilter === cat ? "active-tab" : ""}`}
-                      onClick={() => setNotifCategoryFilter(cat)}
-                    >
-                      {cat === "All" && "🌐 All Alerts"}
-                      {cat === "disaster" && "🚨 Disaster"}
-                      {cat === "weather" && "🌧️ Weather"}
-                      {cat === "road" && "🛣️ Road/Bridge"}
-                      {cat === "fleet" && "🚚 Fleet"}
-                    </button>
-                  ))}
-                </div>
-
-                {/* ALERTS LIST */}
-                <div className="notif-alerts-list">
-                  {filteredNotifications.length === 0 ? (
-                    <div className="notif-empty-state">
-                      <span>✅</span>
-                      <p>{t("noAlerts")}</p>
-                    </div>
-                  ) : (
-                    filteredNotifications.map((n) => {
-                      const localizedTitle = renderLocalizedText(n.titles || n.title, language);
-                      const localizedMessage = renderLocalizedText(n.messages || n.message, language);
-                      return (
-                        <div
-                          key={n.id}
-                          className={`notif-alert-card ${n.severity} ${n.isRead ? "is-read" : "is-unread"}`}
-                          onClick={() => markNotifAsRead(n.id)}
-                        >
-                          <div className="notif-card-header">
-                            <div className="notif-card-meta">
-                              <span className={`severity-pill ${n.severity}`}>
-                                {n.severity.toUpperCase()}
-                              </span>
-                              {n.highway && <span className="highway-tag">📍 {n.highway}</span>}
-                              <span className="timestamp">{n.timestamp}</span>
-                            </div>
-                            <div className="notif-card-buttons">
-                              <button
-                                className="listen-alert-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  playVoiceAlertForNotif(n);
-                                }}
-                                title={`Listen in ${language}`}
-                              >
-                                🔊 {language}
-                              </button>
-                              <button
-                                className="dismiss-alert-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  dismissNotif(n.id);
-                                }}
-                                title="Dismiss alert"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-                          <h5>{localizedTitle}</h5>
-                          <p>{localizedMessage}</p>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* FOOTER */}
-                {notifications.length > 0 && (
-                  <div className="notif-panel-footer">
-                    <button className="clear-all-notifs-btn" onClick={clearAllNotifications}>
-                      🗑️ Clear All Alerts
-                    </button>
-                    <span className="notif-lang-indicator">
-                      🌐 Auto-translating into <strong>{language}</strong>
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <button
-            className={`sih-emergency ${emergencyMode ? "active" : ""}`}
-            onClick={toggleEmergencyMode}
-          >
-            {emergencyMode ? "🚨 DISASTER MODE ACTIVE" : "🚨 TOGGLE EMERGENCY MODE"}
-          </button>
-
           <div className="sih-user-meta">
             <strong>{currentUser.name}</strong>
             <span>{currentUser.role}</span>
@@ -2652,6 +2546,45 @@ function App() {
           <button className="sih-logout" onClick={handleLogout}>Logout</button>
         </div>
       </header>
+
+      <div className="sih-app-workspace">
+        {/* VERTICAL LEFT COMMAND SIDEBAR */}
+        <aside className="sih-vertical-sidebar">
+          <div className="sih-sidebar-header">
+            <span className="sidebar-kicker">🎛️ DASHBOARD NAVIGATION</span>
+          </div>
+          <div className="sih-sidebar-menu">
+            <button className={`sih-nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
+              <span className="sih-nav-icon">📊</span> Overview
+            </button>
+            <button className={`sih-nav-item ${activeTab === 'route_planner' ? 'active' : ''}`} onClick={() => setActiveTab('route_planner')}>
+              <span className="sih-nav-icon">🗺️</span> Route Planner
+            </button>
+            <button className={`sih-nav-item ${activeTab === 'live_tracking' ? 'active' : ''}`} onClick={() => setActiveTab('live_tracking')}>
+              <span className="sih-nav-icon">📡</span> Live Tracking
+            </button>
+            <button className={`sih-nav-item ${activeTab === 'weather_alerts' ? 'active' : ''}`} onClick={() => setActiveTab('weather_alerts')}>
+              <span className="sih-nav-icon">🌤️</span> Weather & Alerts
+            </button>
+            <button className={`sih-nav-item ${activeTab === 'environment_risk' ? 'active' : ''}`} onClick={() => setActiveTab('environment_risk')}>
+              <span className="sih-nav-icon">🌐</span> Environment & Risk
+            </button>
+            <button className={`sih-nav-item ${activeTab === 'district_intelligence' ? 'active' : ''}`} onClick={() => setActiveTab('district_intelligence')}>
+              <span className="sih-nav-icon">🏛️</span> District Intelligence
+            </button>
+            <button className={`sih-nav-item ${activeTab === 'incidents_emergency' ? 'active' : ''}`} onClick={() => setActiveTab('incidents_emergency')}>
+              <span className="sih-nav-icon">🚨</span> Incidents & Emergency
+            </button>
+            <button className={`sih-nav-item ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
+              <span className="sih-nav-icon">📈</span> Analytics & Infra
+            </button>
+            <button className={`sih-nav-item ${activeTab === 'trip_history' ? 'active' : ''}`} onClick={() => setActiveTab('trip_history')}>
+              <span className="sih-nav-icon">📑</span> History & Reports
+            </button>
+          </div>
+        </aside>
+
+        <main className="sih-main-content">
 
       {/* EMERGENCY MODE PRIORITY GREEN CORRIDOR BANNER */}
       {emergencyMode && (
@@ -2717,222 +2650,97 @@ function App() {
         </div>
       )}
 
-      {/* REAL-TIME WEATHER INTELLIGENCE BAR */}
-      {weatherData && (
-        <div className="weather-bar" style={{ background: "linear-gradient(90deg, #1e293b 0%, #0f172a 100%)", color: "white", padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #3b82f6", flexWrap: "wrap", gap: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "11px", fontWeight: "bold", background: "#2563eb", padding: "4px 8px", borderRadius: "6px", letterSpacing: "0.5px" }}>
-              🛰️ OPEN-METEO LIVE SATELLITE WEATHER
-            </span>
-            <span style={{ fontSize: "12px", color: "#cbd5e1" }}>
-              📍 {weatherData.location || "North Eastern Region Highway Corridor"}
-            </span>
-          </div>
+      {/* OFFLINE ALERT BANNER */}
 
-          <div style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
-            <div className="weather-item">
-              <span style={{ fontSize: "11px", color: "#94a3b8" }}>🌡️ Temperature: </span>
-              <strong style={{ fontSize: "13px", color: "#f8fafc" }}>{weatherData.temperature}°C</strong>
+      {/* =========================================================
+         VIEW 1: OVERVIEW COMMAND CENTER
+      ========================================================= */}
+      {activeTab === "overview" && (
+        <div className="sih-view-container">
+
+          <section className="stats-dashboard-wrapper">
+            <div className="stats-header-toolbar">
+              <div className="stats-title-group">
+                <span className="stats-kicker">📊 REAL-TIME LOGISTICS OVERVIEW</span>
+                <h2>Route & Trip Operations</h2>
+              </div>
+              <div className="stats-search-box">
+                <span className="stats-search-icon">🔍</span>
+                <input
+                  type="text"
+                  id="route-search-bar"
+                  value={routeSearchQuery}
+                  onChange={(e) => setRouteSearchQuery(e.target.value)}
+                  placeholder="Search route by origin, destination, corridor or highway..."
+                  className="stats-search-input"
+                />
+                {routeSearchQuery && (
+                  <button className="stats-search-clear" onClick={() => setRouteSearchQuery("")}>✕</button>
+                )}
+                <span className="stats-filter-tag">
+                  {routeSearchQuery ? `Filtered: ${totalTripsCount} routes` : `${totalTripsCount} Routes`}
+                </span>
+              </div>
             </div>
-            <div className="weather-item">
-              <span style={{ fontSize: "11px", color: "#94a3b8" }}>🌧️ Precipitation: </span>
-              <strong style={{ fontSize: "13px", color: "#60a5fa" }}>{weatherData.precipitationMm} mm</strong>
+
+            <div className="analytics-section">
+              <div className="analytics-card metric-card-total">
+                <div className="card-top-row"><span className="card-icon">📦</span><span className="card-pill">All Scheduled</span></div>
+                <h3>Total Trips</h3><h1>{totalTripsCount}</h1><p>All scheduled routes</p>
+              </div>
+              <div className="analytics-card metric-card-active">
+                <div className="card-top-row"><span className="card-icon">🚚</span><span className="card-pill active-pill">● Currently Active</span></div>
+                <h3>Active Trips</h3><h1 className="active-num">{activeTripsCount}</h1><p>Currently on route</p>
+              </div>
+              <div className="analytics-card metric-card-delivered">
+                <div className="card-top-row"><span className="card-icon">✅</span><span className="card-pill delivered-pill">Completed</span></div>
+                <h3>Delivered</h3><h1 className="delivered-num">{deliveredTripsCount}</h1><p>Successfully completed</p>
+              </div>
+              <div className="analytics-card card-hazards" onClick={() => setActiveTab('weather_alerts')} style={{ cursor: "pointer" }}>
+                <div className="card-top-row"><span className="card-icon">⚠️</span><span className="card-pill hazard-pill">{disruptions.length > 0 ? "Active Alerts" : "All Clear"}</span></div>
+                <h3>Active Hazards</h3><h1>{disruptions.length}</h1><p>{disruptions.length > 0 ? "Landslides & Floods" : "All clear on highways"}</p>
+              </div>
+              <div className="analytics-card card-incidents" onClick={() => setActiveTab('incidents_emergency')} style={{ cursor: "pointer" }}>
+                <div className="card-top-row"><span className="card-icon">📋</span><span className="card-pill incident-pill">{incidentsList.length > 0 ? "Sync Live" : "No Reports"}</span></div>
+                <h3>Field Incident Reports</h3><h1>{incidentsList.length}</h1><p>{incidentsList.length > 0 ? "Click to open Reporting Portal" : "Click to submit field report"}</p>
+              </div>
             </div>
-            <div className="weather-item">
-              <span style={{ fontSize: "11px", color: "#94a3b8" }}>💧 Humidity: </span>
-              <strong style={{ fontSize: "13px", color: "#38bdf8" }}>{weatherData.humidityPercent || 76}%</strong>
-            </div>
-            <div className="weather-item">
-              <span style={{ fontSize: "11px", color: "#94a3b8" }}>💨 Wind Speed: </span>
-              <strong style={{ fontSize: "13px", color: "#f8fafc" }}>{weatherData.windspeed} km/h</strong>
-            </div>
-            <div className="weather-item">
-              <span style={{ fontSize: "11px", color: "#94a3b8" }}>🌦️ Condition: </span>
-              <strong style={{ fontSize: "13px", color: "#facc15" }}>{weatherData.condition}</strong>
-            </div>
-            <div className={`weather-badge ${weatherData.isSevere ? "severe" : "normal"}`} style={{ padding: "4px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "bold", background: weatherData.isSevere ? "#ef4444" : "#10b981", color: "white" }}>
-              {weatherData.isSevere ? "⚠️ SEVERE WEATHER ALERT" : "✅ LIVE METEOROLOGICAL TELEMETRY: STABLE"}
-            </div>
-          </div>
+          </section>
         </div>
       )}
 
-      {/* DASHBOARD STATS & ROUTE FILTER SECTION */}
-      <section className="stats-dashboard-wrapper">
-        <div className="stats-header-toolbar">
-          <div className="stats-title-group">
-            <span className="stats-kicker">📊 REAL-TIME LOGISTICS OVERVIEW</span>
-            <h2>Route & Trip Operations</h2>
-          </div>
-          <div className="stats-search-box">
-            <span className="stats-search-icon">🔍</span>
-            <input
-              type="text"
-              id="route-search-bar"
-              value={routeSearchQuery}
-              onChange={(e) => setRouteSearchQuery(e.target.value)}
-              placeholder="Search route by origin, destination, corridor or highway..."
-              className="stats-search-input"
-            />
-            {routeSearchQuery && (
-              <button
-                className="stats-search-clear"
-                onClick={() => setRouteSearchQuery("")}
-                title="Clear route search"
-              >
-                ✕
-              </button>
-            )}
-            <span className="stats-filter-tag">
-              {routeSearchQuery ? `Filtered: ${totalTripsCount} routes` : `${totalTripsCount} Routes`}
-            </span>
-            {isFleetCleared ? (
-              <button
-                className="stats-restore-fleet-btn"
-                onClick={restoreOperationalData}
-                title="Restore default scheduled fleet operations"
-              >
-                🔄 Restore Fleet Data (10 Routes)
-              </button>
-            ) : (
-              <button
-                className="stats-clear-fleet-btn"
-                onClick={clearAllOperationalData}
-                title="Clear all active fleet operations and reset counts to 0"
-              >
-                🗑️ Clear All Operations (Reset to 0)
-              </button>
-            )}
-            {!isFleetCleared && savedTrips.length > 0 && (
-              <button
-                className="stats-clear-history-btn"
-                onClick={clearTripHistory}
-                title="Clear only saved trip history"
-              >
-                🗑️ Clear History ({savedTrips.length})
-              </button>
-            )}
-          </div>
-        </div>
 
-        {/* STATS CARDS ROW: Fully responsive horizontal layout */}
-        <div className="analytics-section">
-          {/* Card 1: Total Trips */}
-          <div className="analytics-card metric-card-total">
-            <div className="card-top-row">
-              <span className="card-icon">📦</span>
-              <span className="card-pill">All Scheduled</span>
+      {/* =========================================================
+         VIEW 2: ROUTE PLANNER VIEW
+      ========================================================= */}
+      {activeTab === "route_planner" && (
+        <div className="sih-view-container">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <h2 style={{ color: "#0F172A", margin: 0, fontSize: "1.6rem", fontWeight: 800 }}>🗺️ Route Planner</h2>
             </div>
-            <h3>Total Trips</h3>
-            <h1>{totalTripsCount}</h1>
-            <p>All scheduled routes</p>
+            <button
+              className={`sih-emergency ${emergencyMode ? "active" : ""}`}
+              onClick={toggleEmergencyMode}
+              style={{
+                padding: "12px 22px",
+                fontSize: "14px",
+                fontWeight: "900",
+                borderRadius: "10px",
+                background: emergencyMode ? "#7f1d1d" : "#dc2626",
+                color: "#ffffff",
+                border: "2px solid #991b1b",
+                boxShadow: "0 4px 14px rgba(220, 38, 38, 0.45)",
+                letterSpacing: "0.6px",
+                cursor: "pointer"
+              }}
+            >
+              {emergencyMode ? "🚨 DISASTER MODE ACTIVE" : "🚨 TOGGLE EMERGENCY MODE"}
+            </button>
           </div>
 
-          {/* Card 2: Active Trips */}
-          <div className="analytics-card metric-card-active">
-            <div className="card-top-row">
-              <span className="card-icon">🚚</span>
-              <span className="card-pill active-pill">● Currently Active</span>
-            </div>
-            <h3>Active Trips</h3>
-            <h1 className="active-num">{activeTripsCount}</h1>
-            <p>Currently on route</p>
-          </div>
-
-          {/* Card 3: Delivered */}
-          <div className="analytics-card metric-card-delivered">
-            <div className="card-top-row">
-              <span className="card-icon">✅</span>
-              <span className="card-pill delivered-pill">Completed</span>
-            </div>
-            <h3>Delivered</h3>
-            <h1 className="delivered-num">{deliveredTripsCount}</h1>
-            <p>Successfully completed</p>
-          </div>
-
-          {/* Card 4: Active Highway Hazards */}
-          <div className="analytics-card card-hazards">
-            <div className="card-top-row">
-              <span className="card-icon">⚠️</span>
-              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                <span className="card-pill hazard-pill">{disruptions.length > 0 ? "Active Alerts" : "All Clear"}</span>
-                {disruptions.length > 0 ? (
-                  <button
-                    className="card-quick-clear-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm("Clear active highway hazard alerts to 0?")) {
-                        setDisruptions([]);
-                      }
-                    }}
-                    title="Clear active hazard alerts to 0"
-                  >
-                    ✕ Clear
-                  </button>
-                ) : (
-                  <button
-                    className="card-quick-restore-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDisruptions(INITIAL_DISRUPTIONS);
-                      fetchDisruptions();
-                    }}
-                    title="Restore active hazard alerts"
-                  >
-                    ↺ Reset
-                  </button>
-                )}
-              </div>
-            </div>
-            <h3>Active Hazards</h3>
-            <h1>{disruptions.length}</h1>
-            <p>{disruptions.length > 0 ? "Landslides & Floods" : "All clear on highways"}</p>
-          </div>
-
-          {/* Card 5: Field Incident Reports */}
-          <div className="analytics-card card-incidents">
-            <div className="card-top-row">
-              <span className="card-icon">📋</span>
-              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                <span className="card-pill incident-pill">{incidentsList.length > 0 ? "Sync Live" : "No Reports"}</span>
-                {incidentsList.length > 0 ? (
-                  <button
-                    className="card-quick-clear-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm("Clear all field incident reports to 0?")) {
-                        setIncidentsList([]);
-                      }
-                    }}
-                    title="Clear field incident reports to 0"
-                  >
-                    ✕ Clear
-                  </button>
-                ) : (
-                  <button
-                    className="card-quick-restore-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      fetchIncidents();
-                    }}
-                    title="Sync live field incidents"
-                  >
-                    ↺ Sync
-                  </button>
-                )}
-              </div>
-            </div>
-            <h3>Field Incident Reports</h3>
-            <h1>{incidentsList.length}</h1>
-            <p>{incidentsList.length > 0 ? "Geo-tagged updates" : "No incidents logged"}</p>
-          </div>
-        </div>
-      </section>
-
-      {/* MAIN TWO-COLUMN DASHBOARD */}
-      <main className="dashboard">
-        {/* ROUTE PLANNER PANEL */}
-        <section className="route-planner-panel">
+          <main className="dashboard">
+            <section className="route-planner-panel">
           {emergencyMode && (
             <div className="sih-emergency-panel">
               <div className="sih-emergency-badge">
@@ -2969,11 +2777,11 @@ function App() {
             </div>
           )}
 
-          <div className="section-box">
-            <div className="box-heading">
+          <div className="section-box" style={{ padding: "26px 28px", background: "#ffffff", borderRadius: "14px", border: "1px solid #cbd5e1", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+            <div className="box-heading" style={{ marginBottom: "18px" }}>
               <div>
-                <span>{t("routePlanner")}</span>
-                <h2>🚚 {t("findRoute")}</h2>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#0F766E", letterSpacing: "0.5px" }}>{t("routePlanner")}</span>
+                <h2 style={{ margin: "4px 0 0", fontSize: "20px", fontWeight: "800", color: "#0f172a" }}>🚚 {t("findRoute")}</h2>
               </div>
             </div>
 
@@ -3000,339 +2808,77 @@ function App() {
               <option value="Churachandpur, Manipur" />
             </datalist>
 
-            <label>📍 {t("sourceLoc")}</label>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>📍 {t("sourceLoc")}</label>
             <input
               type="text"
               list="ner-cities-list"
               value={source}
               onChange={(e) => setSource(e.target.value)}
               placeholder="Type origin hub (e.g. Guwahati, Assam)"
+              style={{ width: "100%", padding: "14px 16px", fontSize: "16px", fontWeight: "600", color: "#0f172a", borderRadius: "10px", border: "2px solid #94a3b8", marginBottom: "16px", background: "#f8fafc", boxSizing: "border-box" }}
             />
 
-            <label>🏁 {t("destLoc")}</label>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>🏁 {t("destLoc")}</label>
             <input
               type="text"
               list="ner-cities-list"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
               placeholder="Type destination depot (e.g. Silchar, Assam)"
+              style={{ width: "100%", padding: "14px 16px", fontSize: "16px", fontWeight: "600", color: "#0f172a", borderRadius: "10px", border: "2px solid #94a3b8", marginBottom: "16px", background: "#f8fafc", boxSizing: "border-box" }}
             />
 
-            <div style={{ margin: "6px 0 12px", display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
-              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>Quick Presets:</span>
+            <div style={{ margin: "6px 0 16px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+              <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "700" }}>Quick Presets:</span>
               <button
                 type="button"
                 onClick={() => { setSource("Guwahati, Assam"); setDestination("Silchar, Assam"); }}
-                style={{ fontSize: "11px", padding: "3px 8px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#1e293b" }}
+                style={{ fontSize: "12px", padding: "5px 10px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#0f172a", fontWeight: "600" }}
               >
                 Guwahati ➔ Silchar
               </button>
               <button
                 type="button"
                 onClick={() => { setSource("Shillong, Meghalaya"); setDestination("Agartala, Tripura"); }}
-                style={{ fontSize: "11px", padding: "3px 8px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#1e293b" }}
+                style={{ fontSize: "12px", padding: "5px 10px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#0f172a", fontWeight: "600" }}
               >
                 Shillong ➔ Agartala
               </button>
               <button
                 type="button"
                 onClick={() => { setSource("Guwahati, Assam"); setDestination("Itanagar, Arunachal Pradesh"); }}
-                style={{ fontSize: "11px", padding: "3px 8px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#1e293b" }}
+                style={{ fontSize: "12px", padding: "5px 10px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#0f172a", fontWeight: "600" }}
               >
                 Guwahati ➔ Itanagar
               </button>
             </div>
 
-            <label>🚛 {t("vehicleType")}</label>
-            <select value={vehicle} onChange={(e) => setVehicle(e.target.value)}>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>🚛 {t("vehicleType")}</label>
+            <select
+              value={vehicle}
+              onChange={(e) => setVehicle(e.target.value)}
+              style={{ width: "100%", padding: "14px 16px", fontSize: "15px", fontWeight: "600", color: "#0f172a", borderRadius: "10px", border: "2px solid #94a3b8", marginBottom: "20px", background: "#f8fafc", boxSizing: "border-box" }}
+            >
               <option value="heavyTruck">🚛 Heavy Cargo Truck (15 Ton)</option>
               <option value="mediumTruck">🚚 Medium Supply Truck (7.5 Ton)</option>
               <option value="deliveryVan">🚐 Emergency Delivery Van (2.5 Ton)</option>
             </select>
 
-            {error && <div className="error-box">❌ {error}</div>}
+            {error && <div className="error-box" style={{ marginBottom: "16px", padding: "10px 14px", borderRadius: "8px", background: "#fef2f2", color: "#dc2626", fontWeight: "bold" }}>❌ {error}</div>}
 
-            <button className="primary-button" onClick={findRoute} disabled={loading}>
+            <button
+              className="primary-button"
+              onClick={findRoute}
+              disabled={loading}
+              style={{ width: "100%", padding: "15px 22px", fontSize: "16px", fontWeight: "800", borderRadius: "10px", background: "linear-gradient(135deg, #0F766E 0%, #0d9488 100%)", color: "#ffffff", border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(15, 118, 110, 0.35)" }}
+            >
               {loading ? t("calculating") : `🔎 ${t("findRoute")}`}
             </button>
           </div>
-
-          {/* ENVIRONMENTAL HAZARD & ROUTE DISRUPTION ASSESSMENT ENGINE */}
-          {(selectedRoute?.riskInfo || destRiskInfo) && (() => {
-            const activeRiskInfo = selectedRoute?.riskInfo || destRiskInfo;
-            const riskLevel = activeRiskInfo.risk || selectedRoute?.riskLevel || "MEDIUM";
-            const riskProbability = activeRiskInfo.probabilityPercent ?? selectedRoute?.riskProbability ?? 45;
-            const features = activeRiskInfo.environmentalFeatures || {
-              elevationMeters: 850,
-              slopeDegrees: 28,
-              rainfallMm: 190,
-              soilSaturationPercent: 54,
-              historicalHazardsCount: 45
-            };
-            const weights = activeRiskInfo.featureImportanceWeightsPercent || {
-              slopeSteepness: 30,
-              rainfallVolume: 25,
-              historicalHazards: 20,
-              soilSaturation: 15,
-              elevation: 10
-            };
-
-            return (
-              <div
-                className="section-box environmental-hazard-card"
-                style={{
-                  marginTop: "16px",
-                  background: "#ffffff",
-                  borderRadius: "12px",
-                  padding: "16px",
-                  border: "1px solid #cbd5e1",
-                  borderLeft: `6px solid ${riskLevel === "HIGH" ? "#dc2626" : riskLevel === "MEDIUM" ? "#d97706" : "#16a34a"}`,
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-                  boxSizing: "border-box",
-                  clear: "both"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexWrap: "wrap", gap: "6px" }}>
-                  <h3 style={{ margin: 0, fontSize: "14px", color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span>🌐</span> ENVIRONMENTAL HAZARD & DISRUPTION ENGINE
-                  </h3>
-                  <span style={{ fontSize: "10px", fontWeight: "bold", background: "#f0fdf4", color: "#16a34a", padding: "2px 8px", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
-                    ● {selectedRoute?.name ? (selectedRoute.name.split("(")[1]?.replace(")", "") || "Active Route") : "Environmental Model"}
-                  </span>
-                </div>
-
-                {/* OVERALL RISK SCORE BANNER */}
-                <div style={{ background: riskLevel === "HIGH" ? "#fef2f2" : riskLevel === "MEDIUM" ? "#fffbe6" : "#f0fdf4", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${riskLevel === "HIGH" ? "#fca5a5" : riskLevel === "MEDIUM" ? "#fcd34d" : "#86efac"}`, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <div>
-                    <span style={{ fontSize: "10px", color: "#475569", display: "block", textTransform: "uppercase", tracking: "0.5px" }}>Corridor Disruption Risk Class</span>
-                    <strong style={{ fontSize: "14px", color: riskLevel === "HIGH" ? "#dc2626" : riskLevel === "MEDIUM" ? "#d97706" : "#16a34a" }}>
-                      ● {riskLevel} RISK ({riskProbability}% Disruption Probability)
-                    </strong>
-                  </div>
-                  <div style={{ textAlign: "right", fontSize: "11px", color: "#64748b" }}>
-                    <span>Terrain Gradient</span>
-                    <strong style={{ display: "block", color: "#0f172a" }}>{activeRiskInfo.terrainType || "Mountainous Corridor"}</strong>
-                  </div>
-                </div>
-
-                {/* 5 ENVIRONMENTAL FEATURE VECTORS GRID */}
-                <h4 style={{ margin: "10px 0 6px", fontSize: "11px", color: "#334155", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  📊 Assessment Parameters for Selected Corridor:
-                </h4>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(95px, 1fr))", gap: "6px", marginBottom: "10px" }}>
-                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>⛰️ Elevation</span>
-                    <strong style={{ fontSize: "11px", color: "#0f172a" }}>{features.elevationMeters} m</strong>
-                  </div>
-                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📐 Terrain Slope</span>
-                    <strong style={{ fontSize: "11px", color: features.slopeDegrees > 25 ? "#dc2626" : "#0f172a" }}>
-                      {features.slopeDegrees}°
-                    </strong>
-                  </div>
-                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🌧️ Rainfall</span>
-                    <strong style={{ fontSize: "11px", color: "#0f172a" }}>{features.rainfallMm} mm</strong>
-                  </div>
-                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>💧 Soil Saturation</span>
-                    <strong style={{ fontSize: "11px", color: "#0f172a" }}>{features.soilSaturationPercent}%</strong>
-                  </div>
-                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📜 History</span>
-                    <strong style={{ fontSize: "11px", color: "#0f172a" }}>{features.historicalHazardsCount} events</strong>
-                  </div>
-                </div>
-
-                {/* DECISION FEATURE WEIGHT BREAKDOWN */}
-                <div style={{ background: "#f1f5f9", padding: "8px 10px", borderRadius: "8px", marginBottom: "8px" }}>
-                  <span style={{ fontSize: "10px", fontWeight: "bold", color: "#334155", display: "block", marginBottom: "4px", textTransform: "uppercase" }}>
-                    🌲 Feature Importance Impact Distribution:
-                  </span>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "10px", color: "#475569" }}>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Slope Steepness</span>
-                        <span>{weights.slopeSteepness || 30}%</span>
-                      </div>
-                      <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
-                        <div style={{ width: `${weights.slopeSteepness || 30}%`, height: "100%", background: "#4f46e5" }} />
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Monsoon Rainfall Volume</span>
-                        <span>{weights.rainfallVolume || 25}%</span>
-                      </div>
-                      <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
-                        <div style={{ width: `${weights.rainfallVolume || 25}%`, height: "100%", background: "#0284c7" }} />
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Historical Hazard Frequency</span>
-                        <span>{weights.historicalHazards || 20}%</span>
-                      </div>
-                      <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
-                        <div style={{ width: `${weights.historicalHazards || 20}%`, height: "100%", background: "#d97706" }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="risk-advisory" style={{ margin: "6px 0 0", fontSize: "11px", color: "#334155", background: "#f8fafc", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                  <strong>Corridor Advisory:</strong> {activeRiskInfo.advisory || selectedRoute?.advisory}
-                </p>
-              </div>
-            );
-          })()}
         </section>
 
         {/* INTERACTIVE LEAFLET MAP PANEL */}
         <section className="map-panel">
-          {/* DEDICATED SELECTED ROUTE REAL GPS VEHICLE TRACKER COCKPIT */}
-          <div
-            className="selected-route-gps-card"
-            style={{
-              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-              color: "#ffffff",
-              borderRadius: "14px",
-              padding: "18px 22px",
-              marginBottom: "16px",
-              border: "1px solid #334155",
-              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.25)"
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "10px", fontWeight: "bold", background: "#16a34a", color: "white", padding: "3px 10px", borderRadius: "12px", letterSpacing: "0.5px" }}>
-                    📡 SELECTED ROUTE LIVE GPS TELEMETRY
-                  </span>
-                </div>
-                <h3 style={{ margin: "6px 0 2px", fontSize: "16px", color: "#f8fafc", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span>🚚</span> Vehicle Call-Sign: <strong style={{ color: "#38bdf8" }}>{selectedRouteTelemetry.callSign}</strong> <small style={{ color: "#94a3b8", fontSize: "12px" }}>({selectedRouteTelemetry.vehicleId})</small>
-                </h3>
-                <div style={{ fontSize: "12px", color: "#cbd5e1" }}>
-                  📍 <strong>Selected Route Corridor:</strong> <span style={{ color: "#facc15" }}>{source} ➔ {destination}</span> ({selectedRoute?.distanceKm || 342.5} km)
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <button
-                  onClick={() => {
-                    const nextState = !isAnimPlaying;
-                    setIsAnimPlaying(nextState);
-                    setRealGpsActive(nextState);
-                  }}
-                  style={{
-                    background: isAnimPlaying ? "#dc2626" : "#16a34a",
-                    color: "white",
-                    border: "none",
-                    padding: "10px 18px",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    boxShadow: isAnimPlaying ? "0 4px 12px rgba(220, 38, 38, 0.4)" : "0 4px 12px rgba(22, 163, 74, 0.4)"
-                  }}
-                >
-                  {isAnimPlaying ? "⏹️ Stop Live Tracking" : "▶️ Start Live GPS Tracking"}
-                </button>
-              </div>
-            </div>
-
-            {/* REAL GPS TELEMETRY METRICS GRID */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px", marginBottom: "14px" }}>
-              <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "10px 12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <span style={{ fontSize: "10px", color: "#94a3b8", display: "block" }}>🏎️ Live Speed</span>
-                <strong style={{ fontSize: "16px", color: "#38bdf8" }}>
-                  {(realGpsPosition?.speed ? realGpsPosition.speed : selectedRouteTelemetry.speedKmH || 48.5).toFixed(1)} km/h
-                </strong>
-              </div>
-
-              <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "10px 12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <span style={{ fontSize: "10px", color: "#94a3b8", display: "block" }}>🌐 Real GPS Latitude</span>
-                <strong style={{ fontSize: "13px", color: "#4ade80" }}>
-                  {(realGpsPosition ? realGpsPosition.lat : selectedRouteTelemetry.currentLat || 25.5788).toFixed(5)}° N
-                </strong>
-              </div>
-
-              <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "10px 12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <span style={{ fontSize: "10px", color: "#94a3b8", display: "block" }}>📍 Real GPS Longitude</span>
-                <strong style={{ fontSize: "13px", color: "#4ade80" }}>
-                  {(realGpsPosition ? realGpsPosition.lon : selectedRouteTelemetry.currentLon || 91.8933).toFixed(5)}° E
-                </strong>
-              </div>
-
-              <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "10px 12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <span style={{ fontSize: "10px", color: "#94a3b8", display: "block" }}>🏔️ Altitude & Bearing</span>
-                <strong style={{ fontSize: "12px", color: "#f8fafc" }}>
-                  {selectedRouteTelemetry.altitudeMeters || 284}m • {selectedRouteTelemetry.headingDegrees || 125}° SE
-                </strong>
-              </div>
-
-              <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "10px 12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <span style={{ fontSize: "10px", color: "#94a3b8", display: "block" }}>🎯 Fix Accuracy / Sats</span>
-                <strong style={{ fontSize: "11px", color: "#facc15" }}>
-                  ±{selectedRouteTelemetry.accuracyMeters || 4.2}m • 🟢 3D FIX (9 Sats)
-                </strong>
-              </div>
-            </div>
-
-            {/* ROUTE PROGRESS BAR & INTERACTIVE SCRUBBER */}
-            <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
-              {(() => {
-                const distKm = selectedRoute?.distanceKm || 342.5;
-                const spdKmH = selectedRouteTelemetry?.speedKmH || 48.5;
-                const totalTripSeconds = Math.round((distKm / spdKmH) * 3600);
-                const remainingSecsTotal = Math.max(0, Math.round(totalTripSeconds * (1 - (routeProgressPercent / 100))) - elapsedTrackingSeconds);
-                const displayMins = Math.floor(remainingSecsTotal / 60);
-                const displaySecs = remainingSecsTotal % 60;
-                return (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#cbd5e1", marginBottom: "6px", flexWrap: "wrap", gap: "6px" }}>
-                    <span>
-                      🛣️ Selected Route Transit Progress: <strong style={{ color: "#38bdf8" }}>{routeProgressPercent.toFixed(2)}% Covered</strong> ({((selectedRoute?.distanceKm || 342.5) * (routeProgressPercent / 100)).toFixed(2)} / {selectedRoute?.distanceKm || 342.5} km)
-                    </span>
-                    <span>
-                      ⏱️ Real-Time 1:1 Clock ETA: <strong style={{ color: "#4ade80" }}>{displayMins}m {displaySecs < 10 ? `0${displaySecs}` : displaySecs}s remaining</strong> <small style={{ color: "#94a3b8", fontSize: "10px" }}>(1 min per 60s)</small>
-                    </span>
-                  </div>
-                );
-              })()}
-
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <button
-                  onClick={() => setIsAnimPlaying(!isAnimPlaying)}
-                  style={{
-                    background: isAnimPlaying ? "#eab308" : "#16a34a",
-                    color: isAnimPlaying ? "#0f172a" : "white",
-                    border: "none",
-                    padding: "4px 10px",
-                    borderRadius: "6px",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    cursor: "pointer"
-                  }}
-                >
-                  {isAnimPlaying ? "⏸️ Pause" : "▶️ Play"}
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={routeProgressPercent}
-                  onChange={(e) => setRouteProgressPercent(parseFloat(e.target.value))}
-                  style={{ flex: 1, cursor: "pointer", accentColor: "#38bdf8" }}
-                />
-              </div>
-            </div>
-          </div>
-
           <div className="map-header">
             <div>
               <span>LEAFLET GIS INTELLIGENCE MAP</span>
@@ -3362,10 +2908,198 @@ function App() {
         </section>
       </main>
 
+        {/* RECOMMENDED OPTIMAL ROUTE CARD */}
+        {selectedRoute && (
+          <section className="full-width-section">
+            <div className={`sih-card route-recommendation-card ${emergencyMode ? "emergency-recommendation" : ""}`}>
+              <div className="sih-card-title">
+                <div>
+                  <span className={`kicker-tag ${emergencyMode ? "emergency-kicker" : ""}`}>
+                    {emergencyMode ? "🚨 EMERGENCY GREEN CORRIDOR (PRIORITY DISPATCH)" : `🏆 ${t("bestRoute")}`}
+                  </span>
+                  <h2>{source} ➔ {destination}</h2>
+                </div>
+                <div className="score-badge">
+                  {emergencyMode ? "Emergency Safety Rating: " : "Logistics Score: "}
+                  <strong>{selectedRoute.score || 95}/100</strong>
+                </div>
+              </div>
+
+              <div className="route-metrics-grid">
+                <div className="metric-box">
+                  <span>📏 Total Distance</span>
+                  <strong>{selectedRoute.distanceKm} km</strong>
+                </div>
+                <div className="metric-box">
+                  <span>⏱️ {emergencyMode ? "Priority Transit Time" : "Travel Time (incl. delay)"}</span>
+                  <strong>{Math.floor(selectedRoute.durationMinutes / 60)}h {selectedRoute.durationMinutes % 60}m</strong>
+                </div>
+                <div className="metric-box">
+                  <span>⛽ Fuel Est.</span>
+                  <strong>{selectedRoute.fuelLitres} Litres</strong>
+                </div>
+                <div className="metric-box">
+                  <span>⚠️ Environmental Delay</span>
+                  <strong>+{selectedRoute.environmentalDelayMinutes || 0} min</strong>
+                </div>
+                <div className="metric-box highlight">
+                  <span>💰 Total Delivery Cost</span>
+                  <strong>₹{(selectedRoute.totalDeliveryCost || 0).toLocaleString()}</strong>
+                  {emergencyMode && selectedRoute.tollCost === 0 && (
+                    <span className="zero-toll-pill">🎉 ₹0 Toll (Disaster Exempt)</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="route-actions-bar" style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginTop: "16px" }}>
+                <button
+                  className={`secondary-button ${realGpsActive ? "active-gps-btn" : ""}`}
+                  onClick={() => setRealGpsActive(!realGpsActive)}
+                  style={{ background: realGpsActive ? "#16a34a" : "#2563eb", color: "white" }}
+                >
+                  {realGpsActive ? "📡 REAL GPS TRACKING ACTIVE" : "📍 ACTIVATE REAL GPS TRACKER"}
+                </button>
+                <button
+                  className="complete-route-btn"
+                  onClick={completeCurrentRoute}
+                  style={{
+                    background: savedTrips.some(t => t.source === source && t.destination === destination && t.status === "Delivered") ? "#15803d" : "#16a34a",
+                    color: "white",
+                    fontWeight: "bold",
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 4px 12px rgba(22,163,74,0.3)"
+                  }}
+                  title="Mark this route as completed to increase the Delivered count in the overview"
+                >
+                  {savedTrips.some(t => t.source === source && t.destination === destination && t.status === "Delivered")
+                    ? "✅ Route Delivered"
+                    : "🏁 Complete Route (Mark Delivered)"}
+                </button>
+                <button className="secondary-button" onClick={() => saveTrip("Active")}>
+                  💾 Save Route (Active)
+                </button>
+                {savedTrips.length > 0 && (
+                  <button
+                    className="secondary-button"
+                    onClick={clearTripHistory}
+                    style={{ borderColor: "#ef4444", color: "#dc2626" }}
+                    title="Clear all saved trip history"
+                  >
+                    🗑️ Clear Saved History ({savedTrips.length})
+                  </button>
+                )}
+                <button className="pdf-button" onClick={() => generatePDFReport(null)}>
+                  📄 {t("pdfExport")}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ROUTE ANALYSIS DASHBOARD */}
+        {selectedRoute && (
+          <section className="full-width-section">
+            <div className="sih-card route-analysis-dashboard">
+              <div className="sih-card-title">
+                <h3>📊 {t("routeAnalysis")}</h3>
+                <span className="analysis-badge">MODEL: {destRiskInfo?.model || "NER-Environmental-RandomForest-v3.2"}</span>
+              </div>
+
+              <div className="cost-breakdown-grid">
+                <div className="cost-item">
+                  <span>⛽ Fuel Cost</span>
+                  <strong>₹{(selectedRoute.fuelCost || 0).toLocaleString()}</strong>
+                  <small>Based on vehicle mileage & fuel price</small>
+                </div>
+                <div className="cost-item">
+                  <span>👤 Driver Allowance</span>
+                  <strong>₹{(selectedRoute.driverCost || 0).toLocaleString()}</strong>
+                  <small>Calculated on total transit hours</small>
+                </div>
+                <div className="cost-item">
+                  <span>🛣️ Toll & Road Charges</span>
+                  <strong>
+                    {selectedRoute.tollCost === 0 ? "₹0 (Toll-Exempt)" : `₹${(selectedRoute.tollCost || 0).toLocaleString()}`}
+                  </strong>
+                  <small>{selectedRoute.tollCost === 0 ? "Statutory exemption under Disaster Management Act" : "NER highway maintenance toll"}</small>
+                </div>
+                <div className="cost-item">
+                  <span>⛰️ Environmental Delay Impact</span>
+                  <strong style={{ color: "#dc2626" }}>+₹{((selectedRoute.environmentalDelayMinutes || 0) * 15).toLocaleString()}</strong>
+                  <small>Landslide/Flood delay penalty</small>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ROUTE COMPARISON DASHBOARD */}
+        {routes.length > 0 && (
+          <section className="full-width-section">
+            <div className="sih-card route-comparison-card">
+              <div className="sih-card-title">
+                <h3>🔀 {t("routeComparison")}</h3>
+                <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                  Compare primary highway corridors vs. alternate bypass routes evaluated by the ML model.
+                </p>
+              </div>
+
+              <div className="comparison-cards-grid">
+                {routes.map((rt, idx) => (
+                  <div key={rt.id || idx} className={`comparison-card ${selectedRoute?.id === rt.id ? "active-choice" : ""} ${rt.isEmergencyGreenCorridor ? "emergency-opt-card" : ""}`}>
+                    <div className="comp-card-header">
+                      <span className="route-opt-tag">
+                        {emergencyMode && rt.isEmergencyGreenCorridor
+                          ? "🚨 Option (Certified Green Corridor)"
+                          : idx === 0
+                          ? "🏆 Option 1 (Primary Corridor)"
+                          : idx === 1
+                          ? "🔀 Option 2 (State Bypass)"
+                          : `⛰️ Option ${idx + 1} (Mountain Trail)`}
+                      </span>
+                      <strong className="comp-score">{rt.score}/100 Score</strong>
+                    </div>
+
+                    <div className="comp-metrics">
+                      <div><span>Distance:</span> <strong>{rt.distanceKm} km</strong></div>
+                      <div><span>Transit Time:</span> <strong>{Math.floor(rt.durationMinutes / 60)}h {rt.durationMinutes % 60}m</strong></div>
+                      <div><span>Risk Probability:</span> <strong style={{ color: rt.riskProbability >= 60 ? "#dc2626" : "#16a34a" }}>{rt.riskProbability || 35}%</strong></div>
+                      <div><span>Total Cost:</span> <strong>₹{(rt.totalDeliveryCost || 0).toLocaleString()}</strong> {rt.tollCost === 0 && <span style={{ color: "#16a34a", fontSize: "11px", fontWeight: "bold" }}>(Zero Toll)</span>}</div>
+                    </div>
+
+                    {rt.advisory && (
+                      <div style={{ fontSize: "11px", color: "#475569", margin: "8px 0", background: "#f8fafc", padding: "6px", borderRadius: "6px" }}>
+                        {rt.advisory}
+                      </div>
+                    )}
+
+                    <button
+                      className={`select-route-btn ${selectedRoute?.id === rt.id ? "selected" : ""}`}
+                      onClick={() => setSelectedRoute(rt)}
+                    >
+                      {selectedRoute?.id === rt.id ? "✅ Selected Route" : "Select This Route"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+    </div>
+  )}
+
       {/* =========================================================
-         REAL-TIME ROAD & BRIDGE ACCESSIBILITY CONTROL ENGINE
+         VIEW 7: ANALYTICS & INFRASTRUCTURE ENGINE VIEW
       ========================================================= */}
-      <section className="full-width-section" id="infrastructure-accessibility">
+      {activeTab === "analytics" && (
+        <div className="sih-view-container">
+          <section className="full-width-section" id="infrastructure-accessibility">
         <div className="sih-card infra-accessibility-card">
           <div className="sih-card-title flex-between">
             <div>
@@ -3816,220 +3550,365 @@ function App() {
           })()}
         </div>
       </section>
+    </div>
+  )}
 
       {/* =========================================================
-         FIELD OFFICIAL INCIDENT REPORTING & REAL-TIME DISRUPTION FEED
+         VIEW 6: INCIDENTS & EMERGENCY VIEW
       ========================================================= */}
-      <section className="full-width-section" id="field-incidents">
-        <div className="sih-card incident-reporting-card" style={{ background: "white", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", padding: "24px", marginBottom: "24px" }}>
-          <div className="sih-card-title flex-between" style={{ marginBottom: "16px", borderBottom: "1px solid #e2e8f0", pb: "12px" }}>
-            <div>
-              <span className="kicker-tag" style={{ background: "#fef2f2", color: "#dc2626", fontWeight: "bold" }}>
-                🚨 FIELD OFFICIAL INCIDENT REPORTING & REAL-TIME DISRUPTION FEED
-              </span>
-              <h2 style={{ margin: "6px 0 2px", color: "#0f172a", fontSize: "20px" }}>Emergency Incident & Infrastructure Disaster Capture</h2>
-              <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
-                Live field hazard transmission engine for inspector reports, landslide blockages, bridge damage, and monsoon flash floods.
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <span style={{ fontSize: "12px", background: "#f1f5f9", padding: "6px 12px", borderRadius: "20px", color: "#334155", fontWeight: "bold" }}>
-                📡 Active Reports: {incidentsList.length}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-            {/* INCIDENT REPORT FORM */}
-            <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-              <h3 style={{ margin: "0 0 14px", fontSize: "15px", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
-                📝 Broadcast New Field Incident
-              </h3>
-              <form onSubmit={submitIncidentReport} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <div>
-                    <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>Hazard Category</label>
-                    <select
-                      value={incidentType}
-                      onChange={(e) => setIncidentType(e.target.value)}
-                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
-                    >
-                      <option value="Landslide">⛰️ Landslide / Rockfall</option>
-                      <option value="Flash Flood">🌊 Flash Flood / Overflow</option>
-                      <option value="Mudslide">🧱 Heavy Mudslide</option>
-                      <option value="Bridge Damage">🌉 Bridge Subsidence</option>
-                      <option value="Road Sinking">🛣️ Road Sinking / Collapse</option>
-                      <option value="Fallen Tree">🌳 Fallen Trees / Debris</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>Severity Class</label>
-                    <select
-                      value={incidentSeverity}
-                      onChange={(e) => setIncidentSeverity(e.target.value)}
-                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
-                    >
-                      <option value="Critical">🔴 Critical (Total Blockage)</option>
-                      <option value="High">🟠 High (Single Lane)</option>
-                      <option value="Medium">🟡 Medium (Passable Caution)</option>
-                      <option value="Low">🟢 Low (Minor Obstruction)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <div>
-                    <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>State</label>
-                    <select
-                      value={incidentState}
-                      onChange={(e) => setIncidentState(e.target.value)}
-                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
-                    >
-                      <option value="MEGHALAYA">MEGHALAYA</option>
-                      <option value="ASSAM">ASSAM</option>
-                      <option value="MANIPUR">MANIPUR</option>
-                      <option value="SIKKIM">SIKKIM</option>
-                      <option value="NAGALAND">NAGALAND</option>
-                      <option value="ARUNACHAL PRADESH">ARUNACHAL PRADESH</option>
-                      <option value="TRIPURA">TRIPURA</option>
-                      <option value="MIZORAM">MIZORAM</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>District / Pass</label>
-                    <input
-                      type="text"
-                      value={incidentDistrict}
-                      onChange={(e) => setIncidentDistrict(e.target.value)}
-                      placeholder="e.g. Jowai / West Jaintia"
-                      style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }}
-                    />
-                  </div>
-                </div>
-
+      {activeTab === "incidents_emergency" && (
+        <div className="sih-view-container">
+          <section className="full-width-section" id="field-incidents">
+            <div className="sih-card incident-reporting-card" style={{ background: "white", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", padding: "24px", marginBottom: "24px" }}>
+              <div className="sih-card-title flex-between" style={{ marginBottom: "16px", borderBottom: "1px solid #e2e8f0", pb: "12px" }}>
                 <div>
-                  <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>Specific Location / Highway Marker</label>
-                  <input
-                    type="text"
-                    value={incidentLocationName}
-                    onChange={(e) => setIncidentLocationName(e.target.value)}
-                    placeholder="e.g. NH-06 Ratacherra Highway Pass KM 114"
-                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }}
-                  />
+                  <span className="kicker-tag" style={{ background: "#fef2f2", color: "#dc2626", fontWeight: "bold" }}>
+                    🚨 FIELD OFFICIAL INCIDENT REPORTING & REAL-TIME DISRUPTION FEED
+                  </span>
+                  <h2 style={{ margin: "6px 0 2px", color: "#0f172a", fontSize: "20px" }}>Emergency Incident & Infrastructure Disaster Capture</h2>
+                  <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                    Live field hazard transmission engine for inspector reports, landslide blockages, bridge damage, and monsoon flash floods.
+                  </p>
                 </div>
-
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>Inspector Operational Notes</label>
-                  <textarea
-                    rows={3}
-                    value={incidentNote}
-                    onChange={(e) => setIncidentNote(e.target.value)}
-                    placeholder="Provide details on road accessibility, clearing machinery deployed, or alternative bypass route..."
-                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontFamily: "inherit" }}
-                  />
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <span style={{ fontSize: "12px", background: "#f1f5f9", padding: "6px 12px", borderRadius: "20px", color: "#334155", fontWeight: "bold" }}>
+                    📡 Active Reports: {incidentsList.length}
+                  </span>
                 </div>
+              </div>
 
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>📷 Attachment / Geo-tagged Field Photo</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    style={{ fontSize: "11px", color: "#64748b" }}
-                  />
-                  {incidentPhotoPreview && (
-                    <div style={{ marginTop: "6px" }}>
-                      <img src={incidentPhotoPreview} alt="Preview" style={{ height: "60px", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  style={{
-                    background: "#dc2626",
-                    color: "white",
-                    border: "none",
-                    padding: "10px 16px",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    marginTop: "4px"
-                  }}
-                >
-                  📡 BROADCAST FIELD INCIDENT REPORT
-                </button>
-              </form>
-            </div>
-
-            {/* LIVE INCIDENT FEED LIST */}
-            <div>
-              <h3 style={{ margin: "0 0 14px", fontSize: "15px", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
-                📡 Live Field Incident Stream ({incidentsList.length})
-              </h3>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "450px", overflowY: "auto", paddingRight: "4px" }}>
-                {incidentsList.length === 0 ? (
-                  <div style={{ padding: "20px", textAlign: "center", color: "#94a3b8", background: "#f8fafc", borderRadius: "8px" }}>
-                    No field incidents recorded.
-                  </div>
-                ) : (
-                  incidentsList.map((inc, idx) => {
-                    const sevColor = inc.severity === "Critical" ? "#dc2626" : inc.severity === "High" ? "#ea580c" : inc.severity === "Medium" ? "#d97706" : "#16a34a";
-                    const sevBg = inc.severity === "Critical" ? "#fef2f2" : inc.severity === "High" ? "#fff7ed" : inc.severity === "Medium" ? "#fffbe6" : "#f0fdf4";
-
-                    return (
-                      <div
-                        key={inc.id || idx}
-                        style={{
-                          background: "white",
-                          borderRadius: "8px",
-                          border: `1px solid ${sevColor}44`,
-                          borderLeft: `5px solid ${sevColor}`,
-                          padding: "12px 14px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#334155" }}>
-                            🚨 {inc.type} • {inc.state}
-                          </span>
-                          <span style={{ background: sevBg, color: sevColor, padding: "2px 8px", borderRadius: "10px", fontSize: "10px", fontWeight: "bold", border: `1px solid ${sevColor}66` }}>
-                            ● {inc.severity?.toUpperCase()} SEVERITY
-                          </span>
-                        </div>
-
-                        <h4 style={{ margin: "2px 0 4px", fontSize: "13px", color: "#0f172a" }}>
-                          📍 {inc.locationName || inc.district}
-                        </h4>
-
-                        <p style={{ margin: "0 0 8px", fontSize: "12px", color: "#475569", lineHeight: "1.4" }}>
-                          {inc.note}
-                        </p>
-
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", color: "#94a3b8", borderTop: "1px solid #f1f5f9", pt: "4px" }}>
-                          <span>👤 {inc.reporter || "field_official@mdoner.gov.in"}</span>
-                          <span>🕒 {inc.reportedAt ? new Date(inc.reportedAt).toLocaleTimeString() : "Just now"}</span>
-                        </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                {/* INCIDENT REPORT FORM */}
+                <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                  <h3 style={{ margin: "0 0 14px", fontSize: "15px", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                    📝 Broadcast New Field Incident
+                  </h3>
+                  <form onSubmit={submitIncidentReport} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div>
+                        <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>Hazard Category</label>
+                        <select
+                          value={incidentType}
+                          onChange={(e) => setIncidentType(e.target.value)}
+                          style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
+                        >
+                          <option value="Landslide">⛰️ Landslide / Rockfall</option>
+                          <option value="Flash Flood">🌊 Flash Flood / Overflow</option>
+                          <option value="Mudslide">🧱 Heavy Mudslide</option>
+                          <option value="Bridge Damage">🌉 Bridge Subsidence</option>
+                          <option value="Road Sinking">🛣️ Road Sinking / Collapse</option>
+                          <option value="Fallen Tree">🌳 Fallen Trees / Debris</option>
+                        </select>
                       </div>
-                    );
-                  })
-                )}
+                      <div>
+                        <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>Severity Class</label>
+                        <select
+                          value={incidentSeverity}
+                          onChange={(e) => setIncidentSeverity(e.target.value)}
+                          style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
+                        >
+                          <option value="Critical">🔴 Critical (Total Blockage)</option>
+                          <option value="High">🟠 High (Single Lane)</option>
+                          <option value="Medium">🟡 Medium (Passable Caution)</option>
+                          <option value="Low">🟢 Low (Minor Obstruction)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div>
+                        <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>State</label>
+                        <select
+                          value={incidentState}
+                          onChange={(e) => setIncidentState(e.target.value)}
+                          style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
+                        >
+                          <option value="MEGHALAYA">MEGHALAYA</option>
+                          <option value="ASSAM">ASSAM</option>
+                          <option value="MANIPUR">MANIPUR</option>
+                          <option value="SIKKIM">SIKKIM</option>
+                          <option value="NAGALAND">NAGALAND</option>
+                          <option value="ARUNACHAL PRADESH">ARUNACHAL PRADESH</option>
+                          <option value="TRIPURA">TRIPURA</option>
+                          <option value="MIZORAM">MIZORAM</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>District / Pass</label>
+                        <input
+                          type="text"
+                          value={incidentDistrict}
+                          onChange={(e) => setIncidentDistrict(e.target.value)}
+                          placeholder="e.g. Jowai / West Jaintia"
+                          style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>Specific Location / Highway Marker</label>
+                      <input
+                        type="text"
+                        value={incidentLocationName}
+                        onChange={(e) => setIncidentLocationName(e.target.value)}
+                        placeholder="e.g. NH-06 Ratacherra Highway Pass KM 114"
+                        style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "4px" }}>Inspector Operational Notes</label>
+                      <textarea
+                        rows={3}
+                        value={incidentNote}
+                        onChange={(e) => setIncidentNote(e.target.value)}
+                        placeholder="Provide details on road accessibility, clearing machinery deployed, or alternative bypass route..."
+                        style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontFamily: "inherit" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: "12px", fontWeight: "bold", color: "#334155", display: "block", marginBottom: "6px" }}>
+                        📷 Evidence Attachment & Live Geo-tagged Camera
+                      </label>
+
+                      {/* CAMERA & ATTACHMENT DUAL BUTTON TOOLBAR */}
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+                        <button
+                          type="button"
+                          onClick={startCameraStream}
+                          style={{
+                            background: "#0F766E",
+                            color: "white",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            border: "none",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            boxShadow: "0 2px 6px rgba(15,118,110,0.3)"
+                          }}
+                        >
+                          📷 Take Live Photo (Webcam/Camera)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          style={{
+                            background: "#2563eb",
+                            color: "white",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            border: "none",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            boxShadow: "0 2px 6px rgba(37,99,235,0.3)"
+                          }}
+                        >
+                          📱 Mobile Rear Camera
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          style={{
+                            background: "#475569",
+                            color: "white",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            border: "none",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            boxShadow: "0 2px 6px rgba(71,85,105,0.3)"
+                          }}
+                        >
+                          📁 Attach Document / File
+                        </button>
+                      </div>
+
+                      {/* HIDDEN INPUT ELEMS */}
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => { setPhotoSourceType("Mobile Camera"); handlePhotoUpload(e); }}
+                        style={{ display: "none" }}
+                      />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx"
+                        onChange={(e) => { setPhotoSourceType("File Attachment"); handlePhotoUpload(e); }}
+                        style={{ display: "none" }}
+                      />
+
+                      {/* LIVE WEBCAM VIEWFINDER OVERLAY */}
+                      {cameraActive && (
+                        <div style={{ background: "#0f172a", padding: "12px", borderRadius: "10px", marginBottom: "12px", border: "2px solid #0F766E" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                            <span style={{ color: "#2dd4bf", fontSize: "11px", fontWeight: "bold" }}>🔴 LIVE CAMERA STREAM ACTIVE</span>
+                            <button
+                              type="button"
+                              onClick={stopCameraStream}
+                              style={{ background: "#dc2626", color: "white", border: "none", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                            >
+                              ✕ Close Camera
+                            </button>
+                          </div>
+                          <video ref={videoRef} autoPlay playsInline style={{ width: "100%", maxHeight: "220px", borderRadius: "6px", background: "#000", objectFit: "cover" }} />
+                          <button
+                            type="button"
+                            onClick={captureWebcamPhoto}
+                            style={{
+                              width: "100%",
+                              marginTop: "8px",
+                              padding: "10px",
+                              background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "6px",
+                              fontWeight: "bold",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "6px"
+                            }}
+                          >
+                            📸 SNAP LIVE PHOTO NOW
+                          </button>
+                        </div>
+                      )}
+
+                      {/* PHOTO PREVIEW THUMBNAIL */}
+                      {incidentPhotoPreview && (
+                        <div style={{ marginTop: "8px", padding: "8px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #cbd5e1", display: "flex", alignItems: "center", gap: "12px" }}>
+                          <img src={incidentPhotoPreview} alt="Preview" style={{ height: "70px", width: "90px", objectFit: "cover", borderRadius: "6px", border: "1px solid #94a3b8" }} />
+                          <div style={{ flex: 1 }}>
+                            <span style={{ background: "#dcfce7", color: "#15803d", padding: "2px 8px", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>
+                              ✓ {photoSourceType || "Photo Ready"}
+                            </span>
+                            <div style={{ fontSize: "11px", color: "#475569", marginTop: "4px" }}>Evidence ready for broadcast submission</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setIncidentPhoto(null); setIncidentPhotoPreview(null); setPhotoSourceType(null); }}
+                            style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fca5a5", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
+                          >
+                            ✕ Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      style={{
+                        background: "#dc2626",
+                        color: "white",
+                        border: "none",
+                        padding: "10px 16px",
+                        borderRadius: "6px",
+                        fontWeight: "bold",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        marginTop: "4px"
+                      }}
+                    >
+                      📡 BROADCAST FIELD INCIDENT REPORT
+                    </button>
+                  </form>
+                </div>
+
+                {/* LIVE INCIDENT FEED LIST */}
+                <div>
+                  <h3 style={{ margin: "0 0 14px", fontSize: "15px", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                    📡 Live Field Incident Stream ({incidentsList.length})
+                  </h3>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "480px", overflowY: "auto", paddingRight: "4px" }}>
+                    {incidentsList.length === 0 ? (
+                      <div style={{ padding: "20px", textAlign: "center", color: "#94a3b8", background: "#f8fafc", borderRadius: "8px" }}>
+                        No field incidents recorded.
+                      </div>
+                    ) : (
+                      incidentsList.map((inc, idx) => {
+                        const sevColor = inc.severity === "Critical" ? "#dc2626" : inc.severity === "High" ? "#ea580c" : inc.severity === "Medium" ? "#d97706" : "#16a34a";
+                        const sevBg = inc.severity === "Critical" ? "#fef2f2" : inc.severity === "High" ? "#fff7ed" : inc.severity === "Medium" ? "#fffbe6" : "#f0fdf4";
+
+                        return (
+                          <div
+                            key={inc.id || idx}
+                            style={{
+                              background: "white",
+                              borderRadius: "8px",
+                              border: `1px solid ${sevColor}44`,
+                              borderLeft: `5px solid ${sevColor}`,
+                              padding: "12px 14px",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                              <span style={{ fontSize: "11px", fontWeight: "bold", color: "#334155" }}>
+                                🚨 {inc.type} • {inc.state}
+                              </span>
+                              <span style={{ background: sevBg, color: sevColor, padding: "2px 8px", borderRadius: "10px", fontSize: "10px", fontWeight: "bold", border: `1px solid ${sevColor}66` }}>
+                                ● {inc.severity?.toUpperCase()} SEVERITY
+                              </span>
+                            </div>
+
+                            <h4 style={{ margin: "2px 0 4px", fontSize: "13px", color: "#0f172a" }}>
+                              📍 {inc.locationName || inc.district}
+                            </h4>
+
+                            <p style={{ margin: "0 0 6px", fontSize: "12px", color: "#475569", lineHeight: "1.4" }}>
+                              {inc.note}
+                            </p>
+
+                            {inc.photoUrl && (
+                              <div style={{ margin: "6px 0" }}>
+                                <img src={inc.photoUrl} alt="Incident Field Evidence" style={{ width: "100%", maxHeight: "140px", objectFit: "cover", borderRadius: "6px", border: "1px solid #cbd5e1" }} />
+                              </div>
+                            )}
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", color: "#94a3b8", borderTop: "1px solid #f1f5f9", paddingTop: "4px" }}>
+                              <span>👤 {inc.reporter || "field_official@mdoner.gov.in"}</span>
+                              <span>🕒 {inc.reportedAt ? new Date(inc.reportedAt).toLocaleTimeString() : "Just now"}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
-      </section>
+      )}
 
       {/* =========================================================
-         REAL-TIME TRAFFIC & HIGHWAY CONGESTION ENGINE
+         REAL-TIME TRAFFIC & HIGHWAY CONGESTION ENGINE (ANALYTICS)
       ========================================================= */}
-      <section className="full-width-section" id="realtime-traffic">
+      {activeTab === "analytics" && (
+        <div className="sih-view-container">
+          <section className="full-width-section" id="realtime-traffic">
         <div className="sih-card traffic-engine-card">
           <div className="sih-card-title flex-between">
             <div>
@@ -4207,300 +4086,773 @@ function App() {
           })()}
         </div>
       </section>
+      </div>
+      )}
 
-      {/* RECOMMENDED OPTIMAL ROUTE CARD */}
-      {selectedRoute && (
-        <section className="full-width-section">
-          <div className={`sih-card route-recommendation-card ${emergencyMode ? "emergency-recommendation" : ""}`}>
-            <div className="sih-card-title">
+      {/* =========================================================
+         VIEW 3: LIVE TRACKING VIEW
+      ========================================================= */}
+      {activeTab === "live_tracking" && (
+        <div className="sih-view-container">
+          {/* DEDICATED SELECTED ROUTE REAL GPS VEHICLE TRACKER COCKPIT */}
+          <div
+            className="selected-route-gps-card"
+            style={{
+              background: "#ffffff",
+              color: "#0f172a",
+              borderRadius: "14px",
+              padding: "20px 24px",
+              marginBottom: "24px",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 4px 16px rgba(15, 23, 42, 0.06)"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
               <div>
-                <span className={`kicker-tag ${emergencyMode ? "emergency-kicker" : ""}`}>
-                  {emergencyMode ? "🚨 EMERGENCY GREEN CORRIDOR (PRIORITY DISPATCH)" : `🏆 ${t("bestRoute")}`}
-                </span>
-                <h2>{source} ➔ {destination}</h2>
-              </div>
-              <div className="score-badge">
-                {emergencyMode ? "Emergency Safety Rating: " : "Logistics Score: "}
-                <strong>{selectedRoute.score || 95}/100</strong>
-              </div>
-            </div>
-
-            <div className="route-metrics-grid">
-              <div className="metric-box">
-                <span>📏 Total Distance</span>
-                <strong>{selectedRoute.distanceKm} km</strong>
-              </div>
-              <div className="metric-box">
-                <span>⏱️ {emergencyMode ? "Priority Transit Time" : "Travel Time (incl. delay)"}</span>
-                <strong>{Math.floor(selectedRoute.durationMinutes / 60)}h {selectedRoute.durationMinutes % 60}m</strong>
-              </div>
-              <div className="metric-box">
-                <span>⛽ Fuel Est.</span>
-                <strong>{selectedRoute.fuelLitres} Litres</strong>
-              </div>
-              <div className="metric-box">
-                <span>⚠️ Environmental Delay</span>
-                <strong>+{selectedRoute.environmentalDelayMinutes || 0} min</strong>
-              </div>
-              <div className="metric-box highlight">
-                <span>💰 Total Delivery Cost</span>
-                <strong>₹{(selectedRoute.totalDeliveryCost || 0).toLocaleString()}</strong>
-                {emergencyMode && selectedRoute.tollCost === 0 && (
-                  <span className="zero-toll-pill">🎉 ₹0 Toll (Disaster Exempt)</span>
-                )}
-              </div>
-            </div>
-
-            <div className="route-actions-bar">
-              <button
-                className={`secondary-button ${realGpsActive ? "active-gps-btn" : ""}`}
-                onClick={() => setRealGpsActive(!realGpsActive)}
-                style={{ background: realGpsActive ? "#16a34a" : "#2563eb", color: "white" }}
-              >
-                {realGpsActive ? "📡 REAL GPS TRACKING ACTIVE" : "📍 ACTIVATE REAL GPS TRACKER"}
-              </button>
-              <button
-                className="complete-route-btn"
-                onClick={completeCurrentRoute}
-                style={{
-                  background: savedTrips.some(t => t.source === source && t.destination === destination && t.status === "Delivered") ? "#15803d" : "#16a34a",
-                  color: "white",
-                  fontWeight: "bold",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  border: "none",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  boxShadow: "0 4px 12px rgba(22,163,74,0.3)"
-                }}
-                title="Mark this route as completed to increase the Delivered count in the overview"
-              >
-                {savedTrips.some(t => t.source === source && t.destination === destination && t.status === "Delivered")
-                  ? "✅ Route Delivered"
-                  : "🏁 Complete Route (Mark Delivered)"}
-              </button>
-              <button className="secondary-button" onClick={() => saveTrip("Active")}>
-                💾 Save Route (Active)
-              </button>
-              {savedTrips.length > 0 && (
-                <button
-                  className="secondary-button"
-                  onClick={clearTripHistory}
-                  style={{ borderColor: "#ef4444", color: "#dc2626" }}
-                  title="Clear all saved trip history"
-                >
-                  🗑️ Clear Saved History ({savedTrips.length})
-                </button>
-              )}
-              <button className="pdf-button" onClick={() => generatePDFReport(null)}>
-                📄 {t("pdfExport")}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ROUTE ANALYSIS DASHBOARD */}
-      {selectedRoute && (
-        <section className="full-width-section">
-          <div className="sih-card route-analysis-dashboard">
-            <div className="sih-card-title">
-              <h3>📊 {t("routeAnalysis")}</h3>
-              <span className="analysis-badge">MODEL: {destRiskInfo?.model || "NER-Environmental-RandomForest-v3.2"}</span>
-            </div>
-
-            <div className="cost-breakdown-grid">
-              <div className="cost-item">
-                <span>⛽ Fuel Cost</span>
-                <strong>₹{(selectedRoute.fuelCost || 0).toLocaleString()}</strong>
-                <small>Based on vehicle mileage & fuel price</small>
-              </div>
-              <div className="cost-item">
-                <span>👤 Driver Allowance</span>
-                <strong>₹{(selectedRoute.driverCost || 0).toLocaleString()}</strong>
-                <small>Calculated on total transit hours</small>
-              </div>
-              <div className="cost-item">
-                <span>🛣️ Toll & Road Charges</span>
-                <strong>
-                  {selectedRoute.tollCost === 0 ? "₹0 (Toll-Exempt)" : `₹${(selectedRoute.tollCost || 0).toLocaleString()}`}
-                </strong>
-                <small>{selectedRoute.tollCost === 0 ? "Statutory exemption under Disaster Management Act" : "NER highway maintenance toll"}</small>
-              </div>
-              <div className="cost-item">
-                <span>⛰️ Environmental Delay Impact</span>
-                <strong style={{ color: "#dc2626" }}>+₹{((selectedRoute.environmentalDelayMinutes || 0) * 15).toLocaleString()}</strong>
-                <small>Landslide/Flood delay penalty</small>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ROUTE COMPARISON DASHBOARD */}
-      {routes.length > 0 && (
-        <section className="full-width-section">
-          <div className="sih-card route-comparison-card">
-            <div className="sih-card-title">
-              <h3>🔀 {t("routeComparison")}</h3>
-              <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
-                Compare primary highway corridors vs. alternate bypass routes evaluated by the ML model.
-              </p>
-            </div>
-
-            <div className="comparison-cards-grid">
-              {routes.map((rt, idx) => (
-                <div key={rt.id || idx} className={`comparison-card ${selectedRoute?.id === rt.id ? "active-choice" : ""} ${rt.isEmergencyGreenCorridor ? "emergency-opt-card" : ""}`}>
-                  <div className="comp-card-header">
-                    <span className="route-opt-tag">
-                      {emergencyMode && rt.isEmergencyGreenCorridor
-                        ? "🚨 Option (Certified Green Corridor)"
-                        : idx === 0
-                        ? "🏆 Option 1 (Primary Corridor)"
-                        : idx === 1
-                        ? "🔀 Option 2 (State Bypass)"
-                        : `⛰️ Option ${idx + 1} (Mountain Trail)`}
-                    </span>
-                    <strong className="comp-score">{rt.score}/100 Score</strong>
-                  </div>
-
-                  <div className="comp-metrics">
-                    <div><span>Distance:</span> <strong>{rt.distanceKm} km</strong></div>
-                    <div><span>Transit Time:</span> <strong>{Math.floor(rt.durationMinutes / 60)}h {rt.durationMinutes % 60}m</strong></div>
-                    <div><span>Risk Probability:</span> <strong style={{ color: rt.riskProbability >= 60 ? "#dc2626" : "#16a34a" }}>{rt.riskProbability || 35}%</strong></div>
-                    <div><span>Total Cost:</span> <strong>₹{(rt.totalDeliveryCost || 0).toLocaleString()}</strong> {rt.tollCost === 0 && <span style={{ color: "#16a34a", fontSize: "11px", fontWeight: "bold" }}>(Zero Toll)</span>}</div>
-                  </div>
-
-                  {rt.advisory && (
-                    <div style={{ fontSize: "11px", color: "#475569", margin: "8px 0", background: "#f8fafc", padding: "6px", borderRadius: "6px" }}>
-                      {rt.advisory}
-                    </div>
-                  )}
-
-                  <button
-                    className={`select-route-btn ${selectedRoute?.id === rt.id ? "selected" : ""}`}
-                    onClick={() => setSelectedRoute(rt)}
-                  >
-                    {selectedRoute?.id === rt.id ? "✅ Selected Route" : "Select This Route"}
-                  </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "10px", fontWeight: "bold", background: "#0F766E", color: "white", padding: "3px 10px", borderRadius: "12px", letterSpacing: "0.5px" }}>
+                    📡 SELECTED ROUTE LIVE GPS TELEMETRY
+                  </span>
                 </div>
+                <h3 style={{ margin: "6px 0 2px", fontSize: "18px", color: "#0f172a", fontWeight: "800", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>🚚</span> Vehicle Call-Sign: <strong style={{ color: "#2563eb" }}>{selectedRouteTelemetry.callSign}</strong> <small style={{ color: "#64748b", fontSize: "12px" }}>({selectedRouteTelemetry.vehicleId})</small>
+                </h3>
+                <div style={{ fontSize: "12px", color: "#475569" }}>
+                  📍 <strong>Selected Route Corridor:</strong> <span style={{ color: "#0F766E", fontWeight: "bold" }}>{source} ➔ {destination}</span> ({selectedRoute?.distanceKm || 342.5} km)
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  onClick={() => {
+                    const nextState = !isAnimPlaying;
+                    setIsAnimPlaying(nextState);
+                    setRealGpsActive(nextState);
+                  }}
+                  style={{
+                    background: isAnimPlaying ? "#dc2626" : "#0F766E",
+                    color: "white",
+                    border: "none",
+                    padding: "10px 18px",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    boxShadow: isAnimPlaying ? "0 4px 12px rgba(220, 38, 38, 0.4)" : "0 4px 12px rgba(15, 118, 110, 0.3)"
+                  }}
+                >
+                  {isAnimPlaying ? "⏹️ Stop Live Tracking" : "▶️ Start Live GPS Tracking"}
+                </button>
+              </div>
+            </div>
+
+            {/* REAL GPS TELEMETRY METRICS GRID */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px", marginBottom: "14px" }}>
+              <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🏎️ Live Speed</span>
+                <strong style={{ fontSize: "16px", color: "#2563eb" }}>
+                  {(realGpsPosition?.speed ? realGpsPosition.speed : selectedRouteTelemetry.speedKmH || 48.5).toFixed(1)} km/h
+                </strong>
+              </div>
+
+              <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🌐 Real GPS Latitude</span>
+                <strong style={{ fontSize: "13px", color: "#16a34a" }}>
+                  {(realGpsPosition ? realGpsPosition.lat : selectedRouteTelemetry.currentLat || 25.5788).toFixed(5)}° N
+                </strong>
+              </div>
+
+              <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📍 Real GPS Longitude</span>
+                <strong style={{ fontSize: "13px", color: "#16a34a" }}>
+                  {(realGpsPosition ? realGpsPosition.lon : selectedRouteTelemetry.currentLon || 91.8933).toFixed(5)}° E
+                </strong>
+              </div>
+
+              <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🏔️ Altitude & Bearing</span>
+                <strong style={{ fontSize: "12px", color: "#0f172a" }}>
+                  {selectedRouteTelemetry.altitudeMeters || 284}m • {selectedRouteTelemetry.headingDegrees || 125}° SE
+                </strong>
+              </div>
+
+              <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🎯 Fix Accuracy / Sats</span>
+                <strong style={{ fontSize: "11px", color: "#d97706" }}>
+                  ±{selectedRouteTelemetry.accuracyMeters || 4.2}m • 🟢 3D FIX (9 Sats)
+                </strong>
+              </div>
+            </div>
+
+            {/* ROUTE PROGRESS BAR & INTERACTIVE SCRUBBER */}
+            <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+              {(() => {
+                const distKm = selectedRoute?.distanceKm || 342.5;
+                const spdKmH = selectedRouteTelemetry?.speedKmH || 48.5;
+                const totalTripSeconds = Math.round((distKm / spdKmH) * 3600);
+                const remainingSecsTotal = Math.max(0, Math.round(totalTripSeconds * (1 - (routeProgressPercent / 100))) - elapsedTrackingSeconds);
+                const displayMins = Math.floor(remainingSecsTotal / 60);
+                const displaySecs = remainingSecsTotal % 60;
+                return (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#475569", marginBottom: "6px", flexWrap: "wrap", gap: "6px" }}>
+                    <span>
+                      🛣️ Selected Route Transit Progress: <strong style={{ color: "#2563eb" }}>{routeProgressPercent.toFixed(2)}% Covered</strong> ({((selectedRoute?.distanceKm || 342.5) * (routeProgressPercent / 100)).toFixed(2)} / {selectedRoute?.distanceKm || 342.5} km)
+                    </span>
+                    <span>
+                      ⏱️ Real-Time 1:1 Clock ETA: <strong style={{ color: "#16a34a" }}>{displayMins}m {displaySecs < 10 ? `0${displaySecs}` : displaySecs}s remaining</strong> <small style={{ color: "#64748b", fontSize: "10px" }}>(1 min per 60s)</small>
+                    </span>
+                  </div>
+                );
+              })()}
+
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <button
+                  onClick={() => setIsAnimPlaying(!isAnimPlaying)}
+                  style={{
+                    background: isAnimPlaying ? "#d97706" : "#16a34a",
+                    color: "white",
+                    border: "none",
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: "pointer"
+                  }}
+                >
+                  {isAnimPlaying ? "⏸️ Pause" : "▶️ Play"}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={routeProgressPercent}
+                  onChange={(e) => setRouteProgressPercent(parseFloat(e.target.value))}
+                  style={{ flex: 1, cursor: "pointer", accentColor: "#2563eb" }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <section className="full-width-section" id="active-fleet">
+            <div className="sih-card" style={{ background: "white", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", padding: "24px", marginBottom: "24px" }}>
+              <div className="sih-card-title flex-between" style={{ marginBottom: "16px" }}>
+                <div>
+                  <span className="kicker-tag" style={{ background: "#eff6ff", color: "#1e40af" }}>
+                    🚚 ACTIVE ESSENTIAL COMMODITY SUPPLY FLEET
+                  </span>
+                  <h2 style={{ margin: "4px 0 0", color: "#0f172a", fontSize: "18px" }}>Live Vehicle Telemetry & Emergency Relief Fleet</h2>
+                  <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                    Real-time tracking of medical, food, and water emergency transit vehicles across NER mountain corridors.
+                  </p>
+                </div>
+                <span style={{ fontSize: "12px", background: "#dbeafe", color: "#1e40af", padding: "6px 14px", borderRadius: "20px", fontWeight: "bold" }}>
+                  📡 LIVE VEHICLES: {fleetVehicles.length}
+                </span>
+              </div>
+
+              <div className="fleet-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+                {fleetVehicles.map((fv) => (
+                  <div key={fv.id} className="fleet-item" style={{ background: "#f8fafc", borderRadius: "10px", padding: "16px", border: "1px solid #e2e8f0" }}>
+                    <div className="fleet-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <strong style={{ fontSize: "14px", color: "#0f172a" }}>{fv.vehicleName}</strong>
+                      <span className={`status-tag ${fv.status === "Delayed" ? "delayed" : "in-transit"}`}>
+                        {fv.status}
+                      </span>
+                    </div>
+                    <div className="fleet-details" style={{ fontSize: "12px", color: "#475569", display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span>📦 <strong>Cargo:</strong> {fv.cargoType} ({fv.cargoWeightKg} kg)</span>
+                      <span>📍 <strong>Route:</strong> {fv.origin} ➔ {fv.destination}</span>
+                      <span>📡 <strong>Real GPS:</strong> Lat {fv.currentLat.toFixed(4)}, Lon {fv.currentLon.toFixed(4)} ({fv.speedKmH} km/h)</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* =========================================================
+         VIEW 4: WEATHER & ALERTS INTELLIGENCE VIEW
+      ========================================================= */}
+      {activeTab === "weather_alerts" && (
+        <div className="sih-view-container">
+          <div className="sih-overview-hero" style={{ marginBottom: "2rem" }}>
+            <div className="sih-hero-title">
+              <span className="kicker-tag" style={{ background: "rgba(59, 130, 246, 0.2)", color: "#60a5fa" }}>
+                🌤️ LIVE SATELLITE METEOROLOGICAL TELEMETRY & ALERT CENTER
+              </span>
+              <h2>NER Weather Intelligence & Regional Disruption Alerts</h2>
+              <p>Real-time Doppler radar precipitation streams, IMD weather warnings, and multilingual incident notification dispatch engine across 8 North Eastern states.</p>
+            </div>
+            <div className="sih-hero-actions">
+              <button
+                className={`notif-toggle-chip ${notifSoundEnabled ? "active-chip" : ""}`}
+                onClick={() => setNotifSoundEnabled(!notifSoundEnabled)}
+                style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", background: "#1e293b", color: "white", border: "1px solid #334155", cursor: "pointer" }}
+              >
+                {notifSoundEnabled ? "🔊 Chime: ON" : "🔇 Chime: OFF"}
+              </button>
+              <button
+                className={`notif-toggle-chip ${notifVoiceEnabled ? "active-chip voice-active" : ""}`}
+                onClick={() => setNotifVoiceEnabled(!notifVoiceEnabled)}
+                style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", background: "#1e293b", color: "white", border: "1px solid #334155", cursor: "pointer" }}
+              >
+                🗣️ Voice Alerts: {notifVoiceEnabled ? "ON" : "OFF"}
+              </button>
+              <button
+                onClick={sendTestMultilingualAlert}
+                style={{ background: "#2563eb", color: "white", border: "none", padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+              >
+                📢 Test Regional Alert
+              </button>
+            </div>
+          </div>
+
+          {/* CITY SELECTOR TOOLBAR FOR REAL LIVE OPEN-METEO WEATHER */}
+          <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", borderRadius: "12px", padding: "16px 20px", marginBottom: "1.5rem", color: "white", boxShadow: "0 4px 14px rgba(15,23,42,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ background: "#0F766E", color: "#2dd4bf", padding: "4px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "bold", border: "1px solid #14b8a6" }}>
+                  📡 LIVE OPEN-METEO REAL WEATHER SATELLITE API
+                </span>
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+                  (api.open-meteo.com)
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "11px", color: "#22c55e", fontWeight: "bold" }}>● LIVE FEED CONNECTED</span>
+                <button
+                  type="button"
+                  onClick={() => fetchWeather(undefined, undefined, weatherData?.location || "Guwahati")}
+                  style={{ background: "#2563eb", color: "white", border: "none", padding: "4px 12px", borderRadius: "6px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
+                >
+                  🔄 Refresh Live Weather API
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "12px", color: "#cbd5e1", fontWeight: "bold" }}>Select NER Region / City:</span>
+              {["Guwahati", "Silchar", "Shillong", "Agartala", "Imphal", "Kohima", "Aizawl", "Gangtok", "Itanagar", "Tawang"].map((city) => (
+                <button
+                  key={city}
+                  type="button"
+                  onClick={() => fetchWeather(undefined, undefined, city)}
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    padding: "4px 10px",
+                    borderRadius: "12px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: (weatherData?.location?.toLowerCase() === city.toLowerCase()) ? "#2563eb" : "rgba(255,255,255,0.12)",
+                    color: (weatherData?.location?.toLowerCase() === city.toLowerCase()) ? "white" : "#e2e8f0"
+                  }}
+                >
+                  📍 {city}
+                </button>
               ))}
             </div>
           </div>
-        </section>
+
+          {/* SATELLITE WEATHER METRICS CARDS (LIVE OPEN-METEO DATA) */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>
+            <div className="sih-glass-card" style={{ padding: "1.25rem", background: "white", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
+              <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: "bold" }}>🌡️ CURRENT TEMPERATURE</span>
+              <h3 style={{ fontSize: "1.8rem", color: "#0284c7", margin: "0.4rem 0 0.2rem", fontWeight: "900" }}>
+                {weatherData?.temperature ? `${weatherData.temperature}°C` : "24.5°C"}
+              </h3>
+              <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "600" }}>
+                📍 {weatherData?.location || "Guwahati"} {weatherData?.latitude ? `(${weatherData.latitude.toFixed(2)}° N, ${weatherData.longitude.toFixed(2)}° E)` : ""}
+              </span>
+            </div>
+            <div className="sih-glass-card" style={{ padding: "1.25rem", background: "white", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
+              <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: "bold" }}>🌧️ PRECIPITATION RATE</span>
+              <h3 style={{ fontSize: "1.8rem", color: "#2563eb", margin: "0.4rem 0 0.2rem", fontWeight: "900" }}>
+                {weatherData?.precipitationMm ?? weatherData?.precipitation ?? 4.2} mm/h
+              </h3>
+              <span style={{ fontSize: "0.8rem", fontWeight: "bold", color: (weatherData?.precipitationMm > 15 || weatherData?.precipitation > 15) ? "#dc2626" : "#16a34a" }}>
+                {(weatherData?.precipitationMm > 15 || weatherData?.precipitation > 15) ? "⚠️ Torrential Downpour Alert" : "🟢 Normal Rain Volume"}
+              </span>
+            </div>
+            <div className="sih-glass-card" style={{ padding: "1.25rem", background: "white", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
+              <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: "bold" }}>💨 WIND SPEED & GUSTS</span>
+              <h3 style={{ fontSize: "1.8rem", color: "#059669", margin: "0.4rem 0 0.2rem", fontWeight: "900" }}>
+                {weatherData?.windspeed ?? weatherData?.windSpeed ?? 12.4} km/h
+              </h3>
+              <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: "600" }}>
+                🌤️ {weatherData?.condition || "Partly Cloudy"}
+              </span>
+            </div>
+            <div className="sih-glass-card" style={{ padding: "1.25rem", background: "white", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
+              <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: "bold" }}>💧 RELATIVE HUMIDITY / SOIL MOISTURE</span>
+              <h3 style={{ fontSize: "1.8rem", color: "#d97706", margin: "0.4rem 0 0.2rem", fontWeight: "900" }}>
+                {weatherData?.humidityPercent ?? weatherData?.humidity ?? 78}%
+              </h3>
+              <span style={{ fontSize: "0.8rem", color: "#d97706", fontWeight: "bold" }}>
+                Soil Saturation Index
+              </span>
+            </div>
+          </div>
+
+          {/* MULTILINGUAL ALERT CENTER CARD */}
+          <div className="sih-glass-card" style={{ padding: "2rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
+              <div>
+                <h3 style={{ color: "#0F172A", margin: 0, fontSize: "1.3rem", fontWeight: 700 }}>🚨 Multilingual Incident & Disruption Stream</h3>
+                <p style={{ color: "#475569", margin: "4px 0 0", fontSize: "0.85rem" }}>Real-time broadcasting in English, Hindi, Assamese, and Bengali.</p>
+              </div>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                {["All", "disaster", "weather", "road", "fleet"].map((cat) => (
+                  <button
+                    key={cat}
+                    className={`notif-tab ${notifCategoryFilter === cat ? "active-tab" : ""}`}
+                    onClick={() => setNotifCategoryFilter(cat)}
+                    style={{ padding: "6px 12px", borderRadius: "6px", fontSize: "12px", background: notifCategoryFilter === cat ? "#2563eb" : "#1e293b", color: "white", border: "none", cursor: "pointer" }}
+                  >
+                    {cat === "All" && "🌐 All Alerts"}
+                    {cat === "disaster" && "🚨 Disaster"}
+                    {cat === "weather" && "🌧️ Weather"}
+                    {cat === "road" && "🛣️ Road"}
+                    {cat === "fleet" && "🚚 Fleet"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="notif-alerts-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1rem" }}>
+              {filteredNotifications.length === 0 ? (
+                <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+                  <span>✅ No Active Severe Alerts for Selected Category</span>
+                </div>
+              ) : (
+                filteredNotifications.map((n) => {
+                  const localizedTitle = renderLocalizedText(n.titles || n.title, language);
+                  const localizedMessage = renderLocalizedText(n.messages || n.message, language);
+                  return (
+                    <div key={n.id} className={`notif-alert-card ${n.severity}`} style={{ background: "#f8fafc", borderRadius: "10px", padding: "16px", border: "1px solid #e2e8f0" }}>
+                      <div className="notif-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                        <span className={`severity-pill ${n.severity}`} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "4px", fontWeight: "bold" }}>
+                          {n.severity.toUpperCase()}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#64748b" }}>{n.timestamp}</span>
+                      </div>
+                      <h4 style={{ color: "#0f172a", margin: "0 0 6px", fontSize: "14px", fontWeight: "bold" }}>{localizedTitle}</h4>
+                      <p style={{ color: "#475569", margin: 0, fontSize: "12px", lineHeight: "1.4" }}>{localizedMessage}</p>
+                      <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <button
+                          onClick={() => playVoiceAlertForNotif(n)}
+                          style={{ background: "rgba(59, 130, 246, 0.2)", color: "#60a5fa", border: "1px solid rgba(59, 130, 246, 0.4)", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", cursor: "pointer" }}
+                        >
+                          🔊 Listen ({language})
+                        </button>
+                        <button
+                          onClick={() => dismissNotif(n.id)}
+                          style={{ background: "transparent", color: "#94a3b8", border: "none", fontSize: "12px", cursor: "pointer" }}
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* LOWER SECTION: ESSENTIAL COMMODITY FLEET LIST */}
-      <section className="full-width-section" id="active-fleet">
-        {/* ESSENTIAL COMMODITY FLEET LIST */}
-        <div className="sih-card" style={{ background: "white", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", padding: "24px", marginBottom: "24px" }}>
-          <div className="sih-card-title flex-between" style={{ marginBottom: "16px" }}>
-            <div>
-              <span className="kicker-tag" style={{ background: "#eff6ff", color: "#1e40af" }}>
-                🚚 ACTIVE ESSENTIAL COMMODITY SUPPLY FLEET
+      {/* =========================================================
+         VIEW 4: ENVIRONMENT & RISK VIEW
+      ========================================================= */}
+      {activeTab === "environment_risk" && (
+        <div className="sih-view-container">
+          <section className="sih-card full-width-card" style={{ background: "white", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", padding: "24px", marginBottom: "24px" }}>
+            <div className="sih-card-title flex-between" style={{ marginBottom: "20px" }}>
+              <div>
+                <span className="kicker-tag" style={{ background: "#ecfdf5", color: "#047857" }}>
+                  🌲 SCIKIT-LEARN ML LANDSLIDE SUSCEPTIBILITY ENGINE
+                </span>
+                <h2 style={{ margin: "4px 0 0", color: "#0f172a", fontSize: "20px" }}>Environmental Risk & Hazard Assessment</h2>
+                <p style={{ margin: "2px 0 0", fontSize: "13px", color: "#64748b" }}>
+                  Predictive machine learning hazard modeling evaluating slope gradient, rainfall volume, soil saturation, and historical disruption events across NER corridors.
+                </p>
+              </div>
+              <span style={{ fontSize: "12px", background: "#d1fae5", color: "#065f46", padding: "6px 14px", borderRadius: "20px", fontWeight: "bold" }}>
+                🎯 MODEL ACCURACY: 96.88%
               </span>
-              <h2 style={{ margin: "4px 0 0", color: "#0f172a", fontSize: "18px" }}>Live Vehicle Telemetry & Emergency Relief Fleet</h2>
-              <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
-                Real-time tracking of medical, food, and water emergency transit vehicles across NER mountain corridors.
-              </p>
             </div>
-            <span style={{ fontSize: "12px", background: "#dbeafe", color: "#1e40af", padding: "6px 14px", borderRadius: "20px", fontWeight: "bold" }}>
-              📡 LIVE VEHICLES: {fleetVehicles.length}
-            </span>
-          </div>
 
-          <div className="fleet-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
-            {fleetVehicles.map((fv) => (
-              <div key={fv.id} className="fleet-item" style={{ background: "#f8fafc", borderRadius: "10px", padding: "16px", border: "1px solid #e2e8f0" }}>
-                <div className="fleet-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                  <strong style={{ fontSize: "14px", color: "#0f172a" }}>{fv.vehicleName}</strong>
-                  <span className={`status-tag ${fv.status === "Delayed" ? "delayed" : "in-transit"}`}>
-                    {fv.status}
-                  </span>
+            {(() => {
+              const activeRiskInfo = selectedRoute?.riskInfo || destRiskInfo || {
+                risk: "HIGH",
+                probabilityPercent: 78.4,
+                terrainType: "Steep Mountain Pass (NH-27)",
+                advisory: "Monsoon soil saturation high. High risk of debris flow near Km 142.",
+                environmentalFeatures: {
+                  elevationMeters: 1420,
+                  slopeDegrees: 34,
+                  rainfallMm: 245,
+                  soilSaturationPercent: 82,
+                  historicalHazardsCount: 68
+                },
+                featureImportanceWeightsPercent: {
+                  slopeSteepness: 35,
+                  rainfallVolume: 28,
+                  historicalHazards: 18,
+                  soilSaturation: 12,
+                  elevation: 7
+                }
+              };
+              const riskLevel = activeRiskInfo.risk || "HIGH";
+              const riskProbability = activeRiskInfo.probabilityPercent ?? 78.4;
+              const features = activeRiskInfo.environmentalFeatures || {
+                elevationMeters: 1420,
+                slopeDegrees: 34,
+                rainfallMm: 245,
+                soilSaturationPercent: 82,
+                historicalHazardsCount: 68
+              };
+              const weights = activeRiskInfo.featureImportanceWeightsPercent || {
+                slopeSteepness: 35,
+                rainfallVolume: 28,
+                historicalHazards: 18,
+                soilSaturation: 12,
+                elevation: 7
+              };
+
+              return (
+                <div
+                  className="environmental-hazard-card"
+                  style={{
+                    background: "#ffffff",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    border: "1px solid #cbd5e1",
+                    borderLeft: `6px solid ${riskLevel === "HIGH" ? "#dc2626" : riskLevel === "MEDIUM" ? "#d97706" : "#16a34a"}`,
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
+                    <h3 style={{ margin: 0, fontSize: "16px", color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span>🌐</span> CORRIDOR DISRUPTION RISK PROFILE
+                    </h3>
+                    <span style={{ fontSize: "12px", fontWeight: "bold", background: "#f0fdf4", color: "#16a34a", padding: "4px 12px", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
+                      ● {selectedRoute?.name ? (selectedRoute.name.split("(")[1]?.replace(")", "") || "Active Corridor") : "Guwahati ➔ Silchar Corridor (NH-27)"}
+                    </span>
+                  </div>
+
+                  {/* OVERALL RISK SCORE BANNER */}
+                  <div style={{ background: riskLevel === "HIGH" ? "#fef2f2" : riskLevel === "MEDIUM" ? "#fffbe6" : "#f0fdf4", padding: "14px 16px", borderRadius: "10px", border: `1px solid ${riskLevel === "HIGH" ? "#fca5a5" : riskLevel === "MEDIUM" ? "#fcd34d" : "#86efac"}`, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#475569", display: "block", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: "bold" }}>Corridor Disruption Risk Rating</span>
+                      <strong style={{ fontSize: "18px", color: riskLevel === "HIGH" ? "#dc2626" : riskLevel === "MEDIUM" ? "#d97706" : "#16a34a" }}>
+                        ● {riskLevel} RISK ({riskProbability}% Disruption Probability)
+                      </strong>
+                    </div>
+                    <div style={{ textAlign: "right", fontSize: "12px", color: "#64748b" }}>
+                      <span>Terrain Classification</span>
+                      <strong style={{ display: "block", color: "#0f172a", fontSize: "14px" }}>{activeRiskInfo.terrainType || "Steep Mountain Pass"}</strong>
+                    </div>
+                  </div>
+
+                  {/* 5 ENVIRONMENTAL FEATURE VECTORS GRID */}
+                  <h4 style={{ margin: "14px 0 10px", fontSize: "12px", color: "#334155", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    📊 Live Telemetry & Geomorphological Parameters:
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px", marginBottom: "16px" }}>
+                    <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "8px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>⛰️ Elevation</span>
+                      <strong style={{ fontSize: "14px", color: "#0f172a" }}>{features.elevationMeters} m</strong>
+                    </div>
+                    <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "8px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>📐 Slope Gradient</span>
+                      <strong style={{ fontSize: "14px", color: features.slopeDegrees > 25 ? "#dc2626" : "#0f172a" }}>
+                        {features.slopeDegrees}°
+                      </strong>
+                    </div>
+                    <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "8px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>🌧️ Rainfall</span>
+                      <strong style={{ fontSize: "14px", color: "#0f172a" }}>{features.rainfallMm} mm</strong>
+                    </div>
+                    <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "8px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>💧 Soil Saturation</span>
+                      <strong style={{ fontSize: "14px", color: "#0f172a" }}>{features.soilSaturationPercent}%</strong>
+                    </div>
+                    <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "8px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                      <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>📜 History</span>
+                      <strong style={{ fontSize: "14px", color: "#0f172a" }}>{features.historicalHazardsCount} events</strong>
+                    </div>
+                  </div>
+
+                  {/* DECISION FEATURE WEIGHT BREAKDOWN */}
+                  <div style={{ background: "#f1f5f9", padding: "14px 16px", borderRadius: "10px", marginBottom: "14px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: "bold", color: "#334155", display: "block", marginBottom: "8px", textTransform: "uppercase" }}>
+                      🌲 Scikit-Learn Random Forest Feature Weight Distribution:
+                    </span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12px", color: "#475569" }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+                          <span>Slope Steepness Vector</span>
+                          <span>{weights.slopeSteepness || 35}%</span>
+                        </div>
+                        <div style={{ height: "6px", background: "#cbd5e1", borderRadius: "3px", overflow: "hidden" }}>
+                          <div style={{ width: `${weights.slopeSteepness || 35}%`, height: "100%", background: "#4f46e5" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+                          <span>Monsoon Precipitation Rate</span>
+                          <span>{weights.rainfallVolume || 28}%</span>
+                        </div>
+                        <div style={{ height: "6px", background: "#cbd5e1", borderRadius: "3px", overflow: "hidden" }}>
+                          <div style={{ width: `${weights.rainfallVolume || 28}%`, height: "100%", background: "#0284c7" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+                          <span>Historical Landslide Frequency</span>
+                          <span>{weights.historicalHazards || 18}%</span>
+                        </div>
+                        <div style={{ height: "6px", background: "#cbd5e1", borderRadius: "3px", overflow: "hidden" }}>
+                          <div style={{ width: `${weights.historicalHazards || 18}%`, height: "100%", background: "#d97706" }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="risk-advisory" style={{ margin: "8px 0 0", fontSize: "13px", color: "#0f172a", background: "#f8fafc", padding: "12px 14px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                    <strong>📢 Tactical Corridor Advisory:</strong> {activeRiskInfo.advisory || selectedRoute?.advisory || "Monsoon rainfall active. Exercise extreme caution along steep slopes."}
+                  </p>
                 </div>
-                <div className="fleet-details" style={{ fontSize: "12px", color: "#475569", display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span>📦 <strong>Cargo:</strong> {fv.cargoType} ({fv.cargoWeightKg} kg)</span>
-                  <span>📍 <strong>Route:</strong> {fv.origin} ➔ {fv.destination}</span>
-                  <span>📡 <strong>Real GPS:</strong> Lat {fv.currentLat.toFixed(4)}, Lon {fv.currentLon.toFixed(4)} ({fv.speedKmH} km/h)</span>
+              );
+            })()}
+          </section>
+        </div>
+      )}
+
+      {/* =========================================================
+         VIEW 5: DISTRICT INTELLIGENCE VIEW
+      ========================================================= */}
+      {activeTab === "district_intelligence" && (
+        <div className="sih-view-container">
+          <section className="sih-card full-width-card">
+            <div className="sih-card-title flex-between">
+              <div>
+                <span className="kicker-tag" style={{ background: "#f0fdf4", color: "#15803d" }}>
+                  🏛️ ALL 8 NER STATES DISTRICT ACCESSIBILITY MATRIX
+                </span>
+                <h2 style={{ margin: "4px 0 0", color: "#0f172a" }}>{t("districtDashboard")}</h2>
+                <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748b" }}>
+                  Real-time regional connectivity %, risk level rating, and operational bottleneck tracking across all 30+ North Eastern districts.
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "2px" }}>Filter State:</label>
+                  <select
+                    value={districtStateFilter}
+                    onChange={(e) => setDistrictStateFilter(e.target.value)}
+                    style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
+                  >
+                    <option value="All">All 8 NER States</option>
+                    <option value="ASSAM">ASSAM</option>
+                    <option value="MEGHALAYA">MEGHALAYA</option>
+                    <option value="MANIPUR">MANIPUR</option>
+                    <option value="MIZORAM">MIZORAM</option>
+                    <option value="NAGALAND">NAGALAND</option>
+                    <option value="SIKKIM">SIKKIM</option>
+                    <option value="TRIPURA">TRIPURA</option>
+                    <option value="ARUNACHAL PRADESH">ARUNACHAL PRADESH</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "2px" }}>Filter District:</label>
+                  <select
+                    value={districtFilter}
+                    onChange={(e) => setDistrictFilter(e.target.value)}
+                    style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
+                  >
+                    <option value="All">All Districts</option>
+                    {districtsMatrix
+                      .filter((d) => districtStateFilter === "All" || d.state.toUpperCase() === districtStateFilter.toUpperCase())
+                      .map((d) => (
+                        <option key={d.district} value={d.district}>
+                          {d.district} ({d.state})
+                        </option>
+                      ))}
+                  </select>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* DISTRICT-WISE ACCESSIBILITY MATRIX */}
-      <section className="sih-card full-width-card">
-        <div className="sih-card-title flex-between">
-          <div>
-            <span className="kicker-tag" style={{ background: "#f0fdf4", color: "#15803d" }}>
-              🏛️ ALL 8 NER STATES DISTRICT ACCESSIBILITY MATRIX
-            </span>
-            <h2 style={{ margin: "4px 0 0", color: "#0f172a" }}>{t("districtDashboard")}</h2>
-            <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748b" }}>
-              Real-time regional connectivity %, risk level rating, and operational bottleneck tracking across all 30+ North Eastern districts.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <div>
-              <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "2px" }}>Filter State:</label>
-              <select
-                value={districtStateFilter}
-                onChange={(e) => setDistrictStateFilter(e.target.value)}
-                style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
-              >
-                <option value="All">All 8 NER States</option>
-                <option value="ASSAM">ASSAM</option>
-                <option value="MEGHALAYA">MEGHALAYA</option>
-                <option value="MANIPUR">MANIPUR</option>
-                <option value="MIZORAM">MIZORAM</option>
-                <option value="NAGALAND">NAGALAND</option>
-                <option value="SIKKIM">SIKKIM</option>
-                <option value="TRIPURA">TRIPURA</option>
-                <option value="ARUNACHAL PRADESH">ARUNACHAL PRADESH</option>
-              </select>
             </div>
-            <div>
-              <label style={{ fontSize: "11px", fontWeight: "bold", color: "#475569", display: "block", marginBottom: "2px" }}>Filter District:</label>
-              <select
-                value={districtFilter}
-                onChange={(e) => setDistrictFilter(e.target.value)}
-                style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", background: "white" }}
-              >
-                <option value="All">All Districts</option>
-                {districtsMatrix
-                  .filter((d) => districtStateFilter === "All" || d.state.toUpperCase() === districtStateFilter.toUpperCase())
-                  .map((d) => (
-                    <option key={d.district} value={d.district}>
-                      {d.district} ({d.state})
-                    </option>
+
+            <div className="district-table">
+              <div className="table-header">
+                <div>State & District</div>
+                <div>Connectivity %</div>
+                <div>Risk Score</div>
+                <div>Status</div>
+                <div>Primary Bottleneck / Action</div>
+              </div>
+              {activeDistrictsList.map((row) => (
+                <div key={row.district} className="table-row">
+                  <div><strong>{row.district}</strong> <small>({row.state})</small></div>
+                  <div>{row.connectivityPercent}%</div>
+                  <div><strong style={{ color: row.riskLevel === "HIGH" ? "#dc2626" : "#16a34a" }}>{row.riskPercent}% ({row.riskLevel})</strong></div>
+                  <div><span className={`sih-status ${row.status.toLowerCase()}`}>{row.status}</span></div>
+                  <div><small>{row.bottleneck}</small></div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* =========================================================
+         VIEW 9: HISTORY & OFFICIAL REPORTS VIEW
+      ========================================================= */}
+      {activeTab === "trip_history" && (
+        <div className="sih-view-container">
+          <section className="full-width-section" id="trip-history-reports">
+            <div className="sih-card" style={{ background: "white", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", padding: "24px", marginBottom: "24px" }}>
+              <div className="sih-card-title flex-between" style={{ marginBottom: "16px", borderBottom: "1px solid #e2e8f0", pb: "12px" }}>
+                <div>
+                  <span className="kicker-tag" style={{ background: "#eff6ff", color: "#1d4ed8", fontWeight: "bold" }}>
+                    📑 HISTORICAL LOGISTICS TRIPS & OFFICIAL PDF REPORTING PORTAL
+                  </span>
+                  <h2 style={{ margin: "6px 0 2px", color: "#0f172a", fontSize: "20px" }}>Saved Routes, Telemetry Audit Logs & Compliance Reports</h2>
+                  <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                    Complete audit trail of calculated delivery routes, emergency green corridors, and official MDoNER/NDMA logistics PDF report exports.
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button
+                    onClick={() => generatePDFReport(null)}
+                    style={{
+                      background: "#0f766e",
+                      color: "white",
+                      border: "none",
+                      padding: "10px 18px",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 12px rgba(15, 118, 110, 0.25)"
+                    }}
+                  >
+                    📄 {t("pdfExport")}
+                  </button>
+                </div>
+              </div>
+
+              {/* SUMMARY KPI CHIPS */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px", margin: "16px 0 24px" }}>
+                <div style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", borderLeft: "4px solid #2563eb" }}>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "bold" }}>TOTAL SAVED ROUTES</span>
+                  <h2 style={{ margin: "4px 0 0", color: "#0f172a", fontSize: "22px" }}>{totalTripsCount}</h2>
+                </div>
+                <div style={{ background: "#f0fdf4", padding: "12px 16px", borderRadius: "8px", borderLeft: "4px solid #16a34a" }}>
+                  <span style={{ fontSize: "11px", color: "#166534", fontWeight: "bold" }}>ACTIVE IN-TRANSIT</span>
+                  <h2 style={{ margin: "4px 0 0", color: "#15803d", fontSize: "22px" }}>{activeTripsCount}</h2>
+                </div>
+                <div style={{ background: "#fdf4ff", padding: "12px 16px", borderRadius: "8px", borderLeft: "4px solid #9333ea" }}>
+                  <span style={{ fontSize: "11px", color: "#6b21a8", fontWeight: "bold" }}>DELIVERED / COMPLETED</span>
+                  <h2 style={{ margin: "4px 0 0", color: "#7e22ce", fontSize: "22px" }}>{deliveredTripsCount}</h2>
+                </div>
+                <div style={{ background: "#fffbe6", padding: "12px 16px", borderRadius: "8px", borderLeft: "4px solid #d97706" }}>
+                  <span style={{ fontSize: "11px", color: "#92400e", fontWeight: "bold" }}>EMERGENCY RELIEF ROUTES</span>
+                  <h2 style={{ margin: "4px 0 0", color: "#b45309", fontSize: "22px" }}>{savedTrips.filter(t => t.emergencyMode).length || (emergencyMode ? 1 : 0)}</h2>
+                </div>
+              </div>
+
+              {/* SEARCH & FILTER TOOLBAR */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", background: "#f8fafc", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>
+                <div style={{ flex: 1, minWidth: "220px" }}>
+                  <input
+                    type="text"
+                    value={routeSearchQuery}
+                    onChange={(e) => setRouteSearchQuery(e.target.value)}
+                    placeholder="🔍 Search by route, origin, destination, driver, vehicle..."
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  />
+                </div>
+                <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "bold" }}>
+                  Showing {filteredTrips.length} entries
+                </span>
+              </div>
+
+              {/* TRIPS & SAVED ROUTES TABLE */}
+              {filteredTrips.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", background: "#f8fafc", borderRadius: "8px" }}>
+                  <span style={{ fontSize: "32px", display: "block", marginBottom: "8px" }}>📑</span>
+                  <strong style={{ color: "#334155" }}>No Saved Routes or Trips Found</strong>
+                  <p style={{ color: "#64748b", fontSize: "13px", margin: "4px 0 0" }}>Calculate a route in Route Planner to automatically log saved trips here.</p>
+                </div>
+              ) : (
+                <div className="district-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <div className="table-header" style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr 1.5fr 1.2fr 1fr 1.2fr", padding: "10px 14px", background: "#f1f5f9", borderRadius: "6px 6px 0 0", fontWeight: "bold", fontSize: "12px", color: "#475569" }}>
+                    <div>Route & Code</div>
+                    <div>Corridor / Highway</div>
+                    <div>Vehicle & Cargo</div>
+                    <div>Departure & ETA</div>
+                    <div>Status</div>
+                    <div style={{ textAlign: "right" }}>Action</div>
+                  </div>
+                  {filteredTrips.map((trip) => (
+                    <div key={trip.id} className="table-row" style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr 1.5fr 1.2fr 1fr 1.2fr", padding: "12px 14px", borderBottom: "1px solid #e2e8f0", alignItems: "center", fontSize: "13px" }}>
+                      <div>
+                        <strong style={{ color: "#0f172a" }}>{trip.source} ➔ {trip.destination}</strong>
+                        <div style={{ fontSize: "11px", color: "#64748b" }}>Code: {trip.routeCode || trip.id}</div>
+                      </div>
+                      <div>
+                        <span>{trip.highway || "NER Highway"}</span>
+                        <div style={{ fontSize: "11px", color: "#64748b" }}>{trip.state || "NER Region"}</div>
+                      </div>
+                      <div>
+                        <span>🚚 {trip.vehicleName}</span>
+                        <div style={{ fontSize: "11px", color: "#64748b" }}>📦 {trip.cargo}</div>
+                      </div>
+                      <div>
+                        <span>🕒 {trip.departureTime}</span>
+                        <div style={{ fontSize: "11px", color: "#16a34a", fontWeight: "bold" }}>ETA: {trip.eta}</div>
+                      </div>
+                      <div>
+                        <span style={{
+                          display: "inline-block",
+                          padding: "4px 10px",
+                          borderRadius: "12px",
+                          fontSize: "11px",
+                          fontWeight: "bold",
+                          background: trip.status?.toLowerCase().includes("delivered") || trip.status?.toLowerCase().includes("completed") ? "#dcfce7" : "#dbeafe",
+                          color: trip.status?.toLowerCase().includes("delivered") || trip.status?.toLowerCase().includes("completed") ? "#15803d" : "#1e40af"
+                        }}>
+                          {trip.status}
+                        </span>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <button
+                          onClick={() => generatePDFReport(trip)}
+                          style={{ padding: "6px 12px", fontSize: "11px", background: "#2563eb", color: "white", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: "bold" }}
+                        >
+                          📄 Export PDF
+                        </button>
+                      </div>
+                    </div>
                   ))}
-              </select>
+                </div>
+              )}
             </div>
-          </div>
+          </section>
         </div>
-
-        <div className="district-table">
-          <div className="table-header">
-            <div>State & District</div>
-            <div>Connectivity %</div>
-            <div>Risk Score</div>
-            <div>Status</div>
-            <div>Primary Bottleneck / Action</div>
-          </div>
-          {activeDistrictsList.map((row) => (
-            <div key={row.district} className="table-row">
-              <div><strong>{row.district}</strong> <small>({row.state})</small></div>
-              <div>{row.connectivityPercent}%</div>
-              <div><strong style={{ color: row.riskLevel === "HIGH" ? "#dc2626" : "#16a34a" }}>{row.riskPercent}% ({row.riskLevel})</strong></div>
-              <div><span className={`sih-status ${row.status.toLowerCase()}`}>{row.status}</span></div>
-              <div><small>{row.bottleneck}</small></div>
-            </div>
-          ))}
-        </div>
-      </section>
+      )}
 
       {/* FLOATING MULTILINGUAL TOAST NOTIFICATION */}
       {activeToast && (
@@ -4543,13 +4895,9 @@ function App() {
         </div>
       )}
 
-      {/* FOOTER ACTIONS */}
-      <footer className="footer-bar">
-        <button onClick={() => generatePDFReport(null)} className="pdf-button">
-          📄 {t("pdfExport")}
-        </button>
-      </footer>
+      </main>
     </div>
+  </div>
   );
 }
 

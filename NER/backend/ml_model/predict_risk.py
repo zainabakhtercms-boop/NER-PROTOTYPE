@@ -10,7 +10,6 @@ from datetime import datetime
 MODEL_FILE = os.path.join(os.path.dirname(__file__), "ner_environmental_rf_model.joblib")
 SCALER_FILE = os.path.join(os.path.dirname(__file__), "ner_environmental_scaler.joblib")
 
-# REAL NER DISTRICT GEOLOGICAL BASELINES
 NER_DISTRICT_PROFILES = {
     "GUWAHATI": {"elevation": 55, "slope": 5, "historical_hazards": 12, "state": "ASSAM", "terrain": "Riverine Alluvial Plain", "bottleneck": "Urban Drainage Overflow"},
     "SILCHAR": {"elevation": 35, "slope": 4, "historical_hazards": 48, "state": "ASSAM", "terrain": "Lowland Basin", "bottleneck": "Barak River Overtopping & Waterlogging"},
@@ -23,7 +22,7 @@ NER_DISTRICT_PROFILES = {
     "AIZAWL": {"elevation": 1132, "slope": 38, "historical_hazards": 92, "state": "MIZORAM", "terrain": "Steep Clay Ridge", "bottleneck": "Hmuifang Landslide Sinking Zone"},
     "LUNGLEI": {"elevation": 722, "slope": 36, "historical_hazards": 78, "state": "MIZORAM", "terrain": "Highland Ridge Corridor", "bottleneck": "Southern Mountain Pass Slopes"},
     "KOHIMA": {"elevation": 1444, "slope": 34, "historical_hazards": 82, "state": "NAGALAND", "terrain": "Rugged Mountain Ridge", "bottleneck": "Phesama Sinking Stretch & Rockfall"},
-    "DIMAPUR": {"elevation": 145, "base_slope": 8, "historical_hazards": 25, "state": "NAGALAND", "terrain": "Commercial Trade Hub", "bottleneck": "Freight Corridor Delay"},
+    "DIMAPUR": {"elevation": 145, "slope": 8, "historical_hazards": 25, "state": "NAGALAND", "terrain": "Commercial Trade Hub", "bottleneck": "Freight Corridor Delay"},
     "GANGTOK": {"elevation": 1650, "slope": 42, "historical_hazards": 115, "state": "SIKKIM", "terrain": "High Himalayan Slope", "bottleneck": "NH-10 Teesta River Erosion"},
     "MANGAN": {"elevation": 1200, "slope": 45, "historical_hazards": 120, "state": "SIKKIM", "terrain": "Highland Gorge Corridor", "bottleneck": "Chungthang Flash Flood & Snow Drifts"},
     "AGARTALA": {"elevation": 15, "slope": 3, "historical_hazards": 8, "state": "TRIPURA", "terrain": "Alluvial Lowland", "bottleneck": "Localized Urban Drainage"},
@@ -31,49 +30,19 @@ NER_DISTRICT_PROFILES = {
     "TAWANG": {"elevation": 2660, "slope": 44, "historical_hazards": 110, "state": "ARUNACHAL PRADESH", "terrain": "High Altitude Mountain Pass", "bottleneck": "Sela Pass High Snow & Rockfall"},
 }
 
-def predict_environmental_risk(state_input, district_input, rainfall_mm_input=190.0, corridor_type="PRIMARY", override_elevation=None, override_slope=None):
-    dist_key = (district_input or "GUWAHATI").strip().upper()
-    state_key = (state_input or "ASSAM").strip().upper()
-
-    profile = None
-    for k, v in NER_DISTRICT_PROFILES.items():
-        if k in dist_key or dist_key in k:
-            profile = v
-            break
-
-    if not profile:
-        profile = {
-            "elevation": 850,
-            "slope": 28,
-            "historical_hazards": 45,
-            "state": state_key,
-            "terrain": "Hilly Intermontane Mountain Ridge",
-            "bottleneck": "Mountain Highway Landslide Risk"
-        }
-
+def predict_single(profile, state_input, district_input, rainfall_mm, corridor_type, rf_model, scaler):
     is_bypass = 1 if corridor_type.upper() == "BYPASS" else 0
 
     if is_bypass:
-        elevation = float(override_elevation) if override_elevation is not None else max(40, int(profile["elevation"] * 0.55))
-        slope = float(override_slope) if override_slope is not None else max(6, int(profile["slope"] * 0.45))
+        elevation = max(40, int(profile["elevation"] * 0.55))
+        slope = max(6, int(profile["slope"] * 0.45))
         historical_hazards = max(5, int(profile["historical_hazards"] * 0.3))
     else:
-        elevation = float(override_elevation) if override_elevation is not None else profile["elevation"]
-        slope = float(override_slope) if override_slope is not None else profile["slope"]
+        elevation = profile["elevation"]
+        slope = profile["slope"]
         historical_hazards = profile["historical_hazards"]
 
-    rainfall_mm = float(rainfall_mm_input) if rainfall_mm_input else 190.0
     soil_saturation = round(min(100.0, (rainfall_mm / 350.0) * 100.0), 1)
-
-    # Scikit-Learn Model Inference
-    rf_model = None
-    scaler = None
-    if os.path.exists(MODEL_FILE) and os.path.exists(SCALER_FILE):
-        try:
-            rf_model = joblib.load(MODEL_FILE)
-            scaler = joblib.load(SCALER_FILE)
-        except Exception as e:
-            rf_model = None
 
     if rf_model and scaler:
         input_data = pd.DataFrame([{
@@ -85,10 +54,9 @@ def predict_environmental_risk(state_input, district_input, rainfall_mm_input=19
             "is_bypass": is_bypass
         }])
         scaled_input = scaler.transform(input_data)
-        probabilities = rf_model.predict_proba(scaled_input)[0]  # [prob_LOW, prob_MEDIUM, prob_HIGH]
+        probabilities = rf_model.predict_proba(scaled_input)[0]
         predicted_class_idx = np.argmax(probabilities)
 
-        # Weighted disruption probability score (100% scale)
         high_prob = probabilities[2] if len(probabilities) > 2 else 0
         med_prob = probabilities[1] if len(probabilities) > 1 else 0
         disruption_prob_percent = int(round((high_prob * 0.95 + med_prob * 0.45) * 100))
@@ -99,7 +67,6 @@ def predict_environmental_risk(state_input, district_input, rainfall_mm_input=19
         model_name = "Scikit-Learn RandomForestClassifier (Trained on 800 Historical NER Disaster Events)"
         is_real_ml = True
     else:
-        # Fallback physics score if joblib model fails to load
         raw_score = (slope * 1.8) + (rainfall_mm * 0.22) + (historical_hazards * 0.45) + (soil_saturation * 0.35) - (is_bypass * 35.0)
         disruption_prob_percent = int(round(100.0 / (1.0 + math.exp(-(raw_score - 75) / 20.0))))
         disruption_prob_percent = max(10, min(95, disruption_prob_percent))
@@ -151,13 +118,51 @@ def predict_environmental_risk(state_input, district_input, rainfall_mm_input=19
         }
     }
 
-if __name__ == "__main__":
+def main():
     state_arg = sys.argv[1] if len(sys.argv) > 1 else "MEGHALAYA"
     district_arg = sys.argv[2] if len(sys.argv) > 2 else "Shillong"
     rain_arg = float(sys.argv[3]) if len(sys.argv) > 3 else 190.0
-    corridor_arg = sys.argv[4] if len(sys.argv) > 4 else "PRIMARY"
-    elev_arg = float(sys.argv[5]) if len(sys.argv) > 5 and sys.argv[5] != "None" else None
-    slope_arg = float(sys.argv[6]) if len(sys.argv) > 6 and sys.argv[6] != "None" else None
+    mode_arg = sys.argv[4] if len(sys.argv) > 4 else "BOTH"
 
-    output = predict_environmental_risk(state_arg, district_arg, rain_arg, corridor_arg, elev_arg, slope_arg)
-    print(json.dumps(output))
+    dist_key = (district_arg or "GUWAHATI").strip().upper()
+    state_key = (state_arg or "ASSAM").strip().upper()
+
+    profile = None
+    for k, v in NER_DISTRICT_PROFILES.items():
+        if k in dist_key or dist_key in k:
+            profile = v
+            break
+    if not profile:
+        profile = {
+            "elevation": 850,
+            "slope": 28,
+            "historical_hazards": 45,
+            "state": state_key,
+            "terrain": "Hilly Intermontane Mountain Ridge",
+            "bottleneck": "Mountain Highway Landslide Risk"
+        }
+
+    rf_model = None
+    scaler = None
+    if os.path.exists(MODEL_FILE) and os.path.exists(SCALER_FILE):
+        try:
+            rf_model = joblib.load(MODEL_FILE)
+            scaler = joblib.load(SCALER_FILE)
+        except Exception:
+            rf_model = None
+
+    if mode_arg.upper() == "BOTH":
+        primary = predict_single(profile, state_arg, district_arg, rain_arg, "PRIMARY", rf_model, scaler)
+        bypass = predict_single(profile, state_arg, district_arg, max(40, rain_arg * 0.6), "BYPASS", rf_model, scaler)
+        res = {
+            "success": True,
+            "primary": primary,
+            "bypass": bypass
+        }
+    else:
+        res = predict_single(profile, state_arg, district_arg, rain_arg, mode_arg.upper(), rf_model, scaler)
+
+    print(json.dumps(res))
+
+if __name__ == "__main__":
+    main()
