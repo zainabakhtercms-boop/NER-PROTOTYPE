@@ -1145,13 +1145,7 @@ function MapView({
         return [item.lat || 26.1445, item.lon || 91.7362];
       });
     }
-    return [
-      [26.1445, 91.7362], // Guwahati
-      [25.5788, 91.8933], // Shillong
-      [25.2100, 92.4200], // Jowai Pass
-      [24.8800, 92.5800], // Badarpur
-      [24.8170, 92.7937]  // Silchar
-    ];
+    return [];
   };
 
   const points = getPolylinePoints();
@@ -1427,13 +1421,13 @@ function App() {
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [emergencyDetails, setEmergencyDetails] = useState(null);
 
-  // Route Planning State
-  const [source, setSource] = useState("Guwahati, Assam");
-  const [destination, setDestination] = useState("Silchar, Assam");
+  // Route Planning State (Empty by default — User selects origin & destination)
+  const [source, setSource] = useState("");
+  const [destination, setDestination] = useState("");
   const [vehicle, setVehicle] = useState("mediumTruck");
-  const [routes, setRoutes] = useState(DEFAULT_COMPARISON_ROUTES);
-  const [selectedRoute, setSelectedRoute] = useState(DEFAULT_ROUTE_DATA);
-  const [destRiskInfo, setDestRiskInfo] = useState(DEFAULT_RISK_INFO);
+  const [routes, setRoutes] = useState([]);
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [destRiskInfo, setDestRiskInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -1445,7 +1439,9 @@ function App() {
       nextVehicle = "deliveryVan";
       setVehicle("deliveryVan");
     }
-    findRoute(nextMode, nextVehicle);
+    if (source.trim() && destination.trim()) {
+      findRoute(nextMode, nextVehicle);
+    }
 
     if (nextMode) {
       triggerMultilingualAlert({
@@ -1845,7 +1841,6 @@ function App() {
     fetchTrips();
     fetchNotifications();
     fetchWeather(26.1445, 91.7362, "Guwahati");
-    findRoute();
   }, []);
 
   const fetchNotifications = async () => {
@@ -2982,11 +2977,71 @@ function App() {
               </div>
             </div>
 
+            <datalist id="ner-cities-list">
+              <option value="Guwahati, Assam" />
+              <option value="Silchar, Assam" />
+              <option value="Shillong, Meghalaya" />
+              <option value="Jowai, Meghalaya" />
+              <option value="Haflong, Assam" />
+              <option value="Dimapur, Nagaland" />
+              <option value="Kohima, Nagaland" />
+              <option value="Imphal, Manipur" />
+              <option value="Aizawl, Mizoram" />
+              <option value="Agartala, Tripura" />
+              <option value="Itanagar, Arunachal Pradesh" />
+              <option value="Tawang, Arunachal Pradesh" />
+              <option value="Gangtok, Sikkim" />
+              <option value="Jorhat, Assam" />
+              <option value="Dibrugarh, Assam" />
+              <option value="Tezpur, Assam" />
+              <option value="Siliguri, West Bengal" />
+              <option value="Darjeeling, West Bengal" />
+              <option value="Nongpoh, Meghalaya" />
+              <option value="Churachandpur, Manipur" />
+            </datalist>
+
             <label>📍 {t("sourceLoc")}</label>
-            <input type="text" value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. Guwahati, Assam" />
+            <input
+              type="text"
+              list="ner-cities-list"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              placeholder="Type origin hub (e.g. Guwahati, Assam)"
+            />
 
             <label>🏁 {t("destLoc")}</label>
-            <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Silchar, Assam" />
+            <input
+              type="text"
+              list="ner-cities-list"
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+              placeholder="Type destination depot (e.g. Silchar, Assam)"
+            />
+
+            <div style={{ margin: "6px 0 12px", display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>Quick Presets:</span>
+              <button
+                type="button"
+                onClick={() => { setSource("Guwahati, Assam"); setDestination("Silchar, Assam"); }}
+                style={{ fontSize: "11px", padding: "3px 8px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#1e293b" }}
+              >
+                Guwahati ➔ Silchar
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSource("Shillong, Meghalaya"); setDestination("Agartala, Tripura"); }}
+                style={{ fontSize: "11px", padding: "3px 8px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#1e293b" }}
+              >
+                Shillong ➔ Agartala
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSource("Guwahati, Assam"); setDestination("Itanagar, Arunachal Pradesh"); }}
+                style={{ fontSize: "11px", padding: "3px 8px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "12px", cursor: "pointer", color: "#1e293b" }}
+              >
+                Guwahati ➔ Itanagar
+              </button>
+            </div>
 
             <label>🚛 {t("vehicleType")}</label>
             <select value={vehicle} onChange={(e) => setVehicle(e.target.value)}>
