@@ -1059,6 +1059,27 @@ const fleetMapIcon = (cargoType) => {
 };
 
 /* =========================================================
+   SAFE LOCALIZED TEXT RENDER HELPER (PREVENTS OBJECTS-IN-JSX REACT CRASH)
+========================================================= */
+const renderLocalizedText = (val, currentLang = "English") => {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "object") {
+    return (
+      val[currentLang] ||
+      val.English ||
+      val.titles?.[currentLang] ||
+      val.titles?.English ||
+      val.messages?.[currentLang] ||
+      val.messages?.English ||
+      Object.values(val).find((v) => typeof v === "string") ||
+      ""
+    );
+  }
+  return String(val);
+};
+
+/* =========================================================
    EXACT ROUTE POLYLINE INTERPOLATION HELPER
 ========================================================= */
 const getPointAtProgress = (points, progressRatio) => {
@@ -1141,8 +1162,10 @@ function MapView({
     }
   }, [selectedRoute, map]);
 
-  // Position snapped EXACTLY onto selected route polyline at current progress %
-  const activeVehiclePos = getPointAtProgress(points, (routeProgressPercent || 0) / 100);
+  // Hardware Real GPS or Position snapped EXACTLY onto selected route polyline at current progress %
+  const activeVehiclePos = (realGpsActive && realGpsPosition?.lat && realGpsPosition?.lon)
+    ? [realGpsPosition.lat, realGpsPosition.lon]
+    : getPointAtProgress(points, (routeProgressPercent || 0) / 100);
 
   return (
     <>
@@ -1152,17 +1175,21 @@ function MapView({
           {emergencyMode && (
             <Polyline
               positions={points}
-              color="#ef4444"
-              weight={16}
-              opacity={0.35}
+              pathOptions={{
+                color: "#ef4444",
+                weight: 16,
+                opacity: 0.35,
+              }}
             />
           )}
           <Polyline
             positions={points}
-            color={emergencyMode ? "#b91c1c" : "#2563eb"}
-            weight={emergencyMode ? 8 : 7}
-            opacity={0.95}
-            dashArray={emergencyMode ? "12, 6" : null}
+            pathOptions={{
+              color: emergencyMode ? "#dc2626" : "#2563eb",
+              weight: emergencyMode ? 9 : 7,
+              opacity: 0.95,
+              dashArray: emergencyMode ? "12, 6" : undefined,
+            }}
           />
         </>
       )}
@@ -1485,7 +1512,21 @@ function App() {
     }
 
     if (notifVoiceEnabled) {
-      const spokenText = (newAlert.title[language] || newAlert.title.English || "") + ". " + (newAlert.message[language] || newAlert.message.English || "");
+      const getAlertTitle = (a) => {
+        if (!a) return "";
+        if (typeof a.title === "string") return a.title;
+        if (a.title && typeof a.title === "object") return a.title[language] || a.title.English || "";
+        if (a.titles && typeof a.titles === "object") return a.titles[language] || a.titles.English || "";
+        return "";
+      };
+      const getAlertMsg = (a) => {
+        if (!a) return "";
+        if (typeof a.message === "string") return a.message;
+        if (a.message && typeof a.message === "object") return a.message[language] || a.message.English || "";
+        if (a.messages && typeof a.messages === "object") return a.messages[language] || a.messages.English || "";
+        return "";
+      };
+      const spokenText = `${getAlertTitle(newAlert)}. ${getAlertMsg(newAlert)}`;
       speakAlertText(spokenText, language);
     }
 
@@ -1514,7 +1555,10 @@ function App() {
   };
 
   const playVoiceAlertForNotif = (notif) => {
-    const text = (notif.title[language] || notif.title.English || "") + ". " + (notif.message[language] || notif.message.English || "");
+    if (!notif) return;
+    const tStr = renderLocalizedText(notif.titles || notif.title, language);
+    const mStr = renderLocalizedText(notif.messages || notif.message, language);
+    const text = `${tStr}. ${mStr}`;
     playNotificationSound();
     speakAlertText(text, language);
   };
@@ -1539,11 +1583,12 @@ function App() {
     });
   };
 
-  // REAL GPS TELEMETRY TRACKING STATE
-  const [realGpsActive, setRealGpsActive] = useState(true);
+  // REAL GPS TELEMETRY TRACKING STATE (INACTIVE BY DEFAULT UNTIL USER CLICKS START)
+  const [realGpsActive, setRealGpsActive] = useState(false);
   const [realGpsPosition, setRealGpsPosition] = useState(null);
-  const [routeProgressPercent, setRouteProgressPercent] = useState(35); // 0% to 100% along selected route polyline
-  const [isAnimPlaying, setIsAnimPlaying] = useState(true);
+  const [routeProgressPercent, setRouteProgressPercent] = useState(0); // 0% (Stationary at Origin until tracking started)
+  const [isAnimPlaying, setIsAnimPlaying] = useState(false);
+  const [elapsedTrackingSeconds, setElapsedTrackingSeconds] = useState(0);
 
   const [selectedRouteTelemetry, setSelectedRouteTelemetry] = useState({
     vehicleId: "AS-01-GC-9821",
@@ -1736,17 +1781,24 @@ function App() {
     }
   };
 
-  // Continuous Selected Route Polyline Vehicle Progress Timer
+  // Selected Route Vehicle Telemetry Progress Timer (True Real-Time: 60s = 1 min)
   useEffect(() => {
     if (!isAnimPlaying) return;
+    const distanceKm = selectedRoute?.distanceKm || 342.5;
+    const speedKmH = selectedRouteTelemetry?.speedKmH || 48.5;
+    
+    // Real-time progress per second: (speedKmH / distanceKm) * (1 sec / 3600 sec) * 100
+    const pctPerSecond = (speedKmH / distanceKm) * (1 / 3600) * 100;
+
     const interval = setInterval(() => {
+      setElapsedTrackingSeconds((prev) => prev + 1);
       setRouteProgressPercent((prev) => {
         if (prev >= 100) return 0; // Loop back to origin
-        return +(prev + 0.4).toFixed(1);
+        return +(prev + pctPerSecond).toFixed(6);
       });
-    }, 800);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [isAnimPlaying]);
+  }, [isAnimPlaying, selectedRoute, selectedRouteTelemetry]);
 
   // Real Hardware GPS Sensor Watch (HTML5 Geolocation)
   useEffect(() => {
@@ -2398,11 +2450,23 @@ function App() {
   return (
     <div className={`app ${emergencyMode ? "emergency-active-theme" : ""}`}>
       {/* GLOBAL HEADER */}
-      <header className="main-header">
+      <header
+        className="main-header"
+        style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+          borderBottom: "1px solid #334155",
+          color: "#ffffff",
+          padding: "20px 38px"
+        }}
+      >
         <div className="brand-title">
           <div>
-            <h1>{t("brandTitle")}</h1>
-            <p>{t("brandSubtitle")}</p>
+            <h1 style={{ color: "#ffffff", margin: 0, fontWeight: 850, fontSize: "24px" }}>
+              <span style={{ color: "#ffffff" }}>{t("brandTitle")}</span>
+            </h1>
+            <p style={{ color: "#ffffff", margin: "5px 0 0", opacity: 0.95, fontSize: "13px" }}>
+              <span style={{ color: "#ffffff" }}>{t("brandSubtitle")}</span>
+            </p>
           </div>
         </div>
 
@@ -2517,8 +2581,8 @@ function App() {
                     </div>
                   ) : (
                     filteredNotifications.map((n) => {
-                      const localizedTitle = n.title[language] || n.title.English || "";
-                      const localizedMessage = n.message[language] || n.message.English || "";
+                      const localizedTitle = renderLocalizedText(n.titles || n.title, language);
+                      const localizedMessage = renderLocalizedText(n.messages || n.message, language);
                       return (
                         <div
                           key={n.id}
@@ -2593,6 +2657,57 @@ function App() {
           <button className="sih-logout" onClick={handleLogout}>Logout</button>
         </div>
       </header>
+
+      {/* EMERGENCY MODE PRIORITY GREEN CORRIDOR BANNER */}
+      {emergencyMode && (
+        <div
+          className="emergency-global-banner"
+          style={{
+            background: "linear-gradient(90deg, #7f1d1d 0%, #dc2626 50%, #7f1d1d 100%)",
+            color: "#ffffff",
+            padding: "12px 24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+            boxShadow: "0 4px 15px rgba(220, 38, 38, 0.4)",
+            borderBottom: "3px solid #f87171"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontSize: "22px" }}>🚨</span>
+            <div>
+              <strong style={{ fontSize: "14px", letterSpacing: "0.5px", textTransform: "uppercase" }}>
+                NDMA & MDoNER DISASTER PROTOCOL ENGAGED — EMERGENCY GREEN CORRIDOR ROUTING
+              </strong>
+              <div style={{ fontSize: "12px", color: "#fca5a5", marginTop: "2px" }}>
+                Priority convoy escort active • 100% Statutory Toll Waiver (Disaster Management Act 2005) • Dynamic Landslide Bypass Active
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <span style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "bold" }}>
+              TOKEN: {emergencyDetails?.greenCorridorCode || "NER-GC-2026-ACTIVE"}
+            </span>
+            <button
+              onClick={toggleEmergencyMode}
+              style={{
+                background: "#ffffff",
+                color: "#991b1b",
+                border: "none",
+                padding: "6px 14px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                fontWeight: "bold",
+                cursor: "pointer"
+              }}
+            >
+              ✖ Exit Emergency Mode
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* OFFLINE ALERT BANNER */}
       {!isOnline && (
@@ -2888,114 +3003,134 @@ function App() {
           </div>
 
           {/* ENVIRONMENTAL HAZARD & ROUTE DISRUPTION ASSESSMENT ENGINE */}
-          {destRiskInfo && (
-            <div
-              className="section-box environmental-hazard-card"
-              style={{
-                marginTop: "16px",
-                background: "#ffffff",
-                borderRadius: "12px",
-                padding: "16px",
-                border: "1px solid #cbd5e1",
-                borderLeft: `6px solid ${destRiskInfo.risk === "HIGH" ? "#dc2626" : destRiskInfo.risk === "MEDIUM" ? "#d97706" : "#16a34a"}`,
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-                boxSizing: "border-box",
-                clear: "both"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexWrap: "wrap", gap: "6px" }}>
-                <h3 style={{ margin: 0, fontSize: "14px", color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>🌐</span> ENVIRONMENTAL HAZARD & DISRUPTION ENGINE
-                </h3>
-                <span style={{ fontSize: "10px", fontWeight: "bold", background: "#f0fdf4", color: "#16a34a", padding: "2px 8px", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
-                  ● Environmental Hazard Model
-                </span>
-              </div>
+          {(selectedRoute?.riskInfo || destRiskInfo) && (() => {
+            const activeRiskInfo = selectedRoute?.riskInfo || destRiskInfo;
+            const riskLevel = activeRiskInfo.risk || selectedRoute?.riskLevel || "MEDIUM";
+            const riskProbability = activeRiskInfo.probabilityPercent ?? selectedRoute?.riskProbability ?? 45;
+            const features = activeRiskInfo.environmentalFeatures || {
+              elevationMeters: 850,
+              slopeDegrees: 28,
+              rainfallMm: 190,
+              soilSaturationPercent: 54,
+              historicalHazardsCount: 45
+            };
+            const weights = activeRiskInfo.featureImportanceWeightsPercent || {
+              slopeSteepness: 30,
+              rainfallVolume: 25,
+              historicalHazards: 20,
+              soilSaturation: 15,
+              elevation: 10
+            };
 
-              {/* OVERALL RISK SCORE BANNER */}
-              <div style={{ background: destRiskInfo.risk === "HIGH" ? "#fef2f2" : destRiskInfo.risk === "MEDIUM" ? "#fffbe6" : "#f0fdf4", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${destRiskInfo.risk === "HIGH" ? "#fca5a5" : destRiskInfo.risk === "MEDIUM" ? "#fcd34d" : "#86efac"}`, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <span style={{ fontSize: "10px", color: "#475569", display: "block", textTransform: "uppercase", tracking: "0.5px" }}>Landslide & Flood Disruption Class</span>
-                  <strong style={{ fontSize: "14px", color: destRiskInfo.risk === "HIGH" ? "#dc2626" : destRiskInfo.risk === "MEDIUM" ? "#d97706" : "#16a34a" }}>
-                    ● {destRiskInfo.risk} RISK ({destRiskInfo.probabilityPercent}% Disruption Probability)
-                  </strong>
+            return (
+              <div
+                className="section-box environmental-hazard-card"
+                style={{
+                  marginTop: "16px",
+                  background: "#ffffff",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  border: "1px solid #cbd5e1",
+                  borderLeft: `6px solid ${riskLevel === "HIGH" ? "#dc2626" : riskLevel === "MEDIUM" ? "#d97706" : "#16a34a"}`,
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+                  boxSizing: "border-box",
+                  clear: "both"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexWrap: "wrap", gap: "6px" }}>
+                  <h3 style={{ margin: 0, fontSize: "14px", color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span>🌐</span> ENVIRONMENTAL HAZARD & DISRUPTION ENGINE
+                  </h3>
+                  <span style={{ fontSize: "10px", fontWeight: "bold", background: "#f0fdf4", color: "#16a34a", padding: "2px 8px", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
+                    ● {selectedRoute?.name ? (selectedRoute.name.split("(")[1]?.replace(")", "") || "Active Route") : "Environmental Model"}
+                  </span>
                 </div>
-                <div style={{ textAlign: "right", fontSize: "11px", color: "#64748b" }}>
-                  <span>Terrain Gradient</span>
-                  <strong style={{ display: "block", color: "#0f172a" }}>{destRiskInfo.terrainType || "Mountainous Ridge"}</strong>
-                </div>
-              </div>
 
-              {/* 5 ENVIRONMENTAL FEATURE VECTORS GRID */}
-              <h4 style={{ margin: "10px 0 6px", fontSize: "11px", color: "#334155", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                📊 Environmental Assessment Parameters:
-              </h4>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(95px, 1fr))", gap: "6px", marginBottom: "10px" }}>
-                <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                  <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>⛰️ Elevation</span>
-                  <strong style={{ fontSize: "11px", color: "#0f172a" }}>{destRiskInfo.environmentalFeatures?.elevationMeters || 850} m</strong>
-                </div>
-                <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                  <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📐 Terrain Slope</span>
-                  <strong style={{ fontSize: "11px", color: destRiskInfo.environmentalFeatures?.slopeDegrees > 25 ? "#dc2626" : "#0f172a" }}>
-                    {destRiskInfo.environmentalFeatures?.slopeDegrees || 28}°
-                  </strong>
-                </div>
-                <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                  <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🌧️ Rainfall</span>
-                  <strong style={{ fontSize: "11px", color: "#0f172a" }}>{destRiskInfo.environmentalFeatures?.rainfallMm || 190} mm</strong>
-                </div>
-                <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                  <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>💧 Soil Saturation</span>
-                  <strong style={{ fontSize: "11px", color: "#0f172a" }}>{destRiskInfo.environmentalFeatures?.soilSaturationPercent || 54}%</strong>
-                </div>
-                <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-                  <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📜 History</span>
-                  <strong style={{ fontSize: "11px", color: "#0f172a" }}>{destRiskInfo.environmentalFeatures?.historicalHazardsCount || 45} events</strong>
-                </div>
-              </div>
-
-              {/* DECISION FEATURE WEIGHT BREAKDOWN */}
-              <div style={{ background: "#f1f5f9", padding: "8px 10px", borderRadius: "8px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "10px", fontWeight: "bold", color: "#334155", display: "block", marginBottom: "4px", textTransform: "uppercase" }}>
-                  🌲 Feature Importance Impact Distribution:
-                </span>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "10px", color: "#475569" }}>
+                {/* OVERALL RISK SCORE BANNER */}
+                <div style={{ background: riskLevel === "HIGH" ? "#fef2f2" : riskLevel === "MEDIUM" ? "#fffbe6" : "#f0fdf4", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${riskLevel === "HIGH" ? "#fca5a5" : riskLevel === "MEDIUM" ? "#fcd34d" : "#86efac"}`, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Slope Steepness</span>
-                      <span>30%</span>
-                    </div>
-                    <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ width: "30%", height: "100%", background: "#4f46e5" }} />
-                    </div>
+                    <span style={{ fontSize: "10px", color: "#475569", display: "block", textTransform: "uppercase", tracking: "0.5px" }}>Corridor Disruption Risk Class</span>
+                    <strong style={{ fontSize: "14px", color: riskLevel === "HIGH" ? "#dc2626" : riskLevel === "MEDIUM" ? "#d97706" : "#16a34a" }}>
+                      ● {riskLevel} RISK ({riskProbability}% Disruption Probability)
+                    </strong>
                   </div>
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Monsoon Rainfall Volume</span>
-                      <span>25%</span>
-                    </div>
-                    <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ width: "25%", height: "100%", background: "#0284c7" }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Historical Hazard Frequency</span>
-                      <span>20%</span>
-                    </div>
-                    <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
-                      <div style={{ width: "20%", height: "100%", background: "#d97706" }} />
-                    </div>
+                  <div style={{ textAlign: "right", fontSize: "11px", color: "#64748b" }}>
+                    <span>Terrain Gradient</span>
+                    <strong style={{ display: "block", color: "#0f172a" }}>{activeRiskInfo.terrainType || "Mountainous Corridor"}</strong>
                   </div>
                 </div>
-              </div>
 
-              <p className="risk-advisory" style={{ margin: "6px 0 0", fontSize: "11px", color: "#334155", background: "#f8fafc", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                <strong>Advisory:</strong> {destRiskInfo.advisory}
-              </p>
-            </div>
-          )}
+                {/* 5 ENVIRONMENTAL FEATURE VECTORS GRID */}
+                <h4 style={{ margin: "10px 0 6px", fontSize: "11px", color: "#334155", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  📊 Assessment Parameters for Selected Corridor:
+                </h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(95px, 1fr))", gap: "6px", marginBottom: "10px" }}>
+                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>⛰️ Elevation</span>
+                    <strong style={{ fontSize: "11px", color: "#0f172a" }}>{features.elevationMeters} m</strong>
+                  </div>
+                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📐 Terrain Slope</span>
+                    <strong style={{ fontSize: "11px", color: features.slopeDegrees > 25 ? "#dc2626" : "#0f172a" }}>
+                      {features.slopeDegrees}°
+                    </strong>
+                  </div>
+                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🌧️ Rainfall</span>
+                    <strong style={{ fontSize: "11px", color: "#0f172a" }}>{features.rainfallMm} mm</strong>
+                  </div>
+                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>💧 Soil Saturation</span>
+                    <strong style={{ fontSize: "11px", color: "#0f172a" }}>{features.soilSaturationPercent}%</strong>
+                  </div>
+                  <div style={{ background: "#f8fafc", padding: "6px 8px", borderRadius: "6px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📜 History</span>
+                    <strong style={{ fontSize: "11px", color: "#0f172a" }}>{features.historicalHazardsCount} events</strong>
+                  </div>
+                </div>
+
+                {/* DECISION FEATURE WEIGHT BREAKDOWN */}
+                <div style={{ background: "#f1f5f9", padding: "8px 10px", borderRadius: "8px", marginBottom: "8px" }}>
+                  <span style={{ fontSize: "10px", fontWeight: "bold", color: "#334155", display: "block", marginBottom: "4px", textTransform: "uppercase" }}>
+                    🌲 Feature Importance Impact Distribution:
+                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "10px", color: "#475569" }}>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Slope Steepness</span>
+                        <span>{weights.slopeSteepness || 30}%</span>
+                      </div>
+                      <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
+                        <div style={{ width: `${weights.slopeSteepness || 30}%`, height: "100%", background: "#4f46e5" }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Monsoon Rainfall Volume</span>
+                        <span>{weights.rainfallVolume || 25}%</span>
+                      </div>
+                      <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
+                        <div style={{ width: `${weights.rainfallVolume || 25}%`, height: "100%", background: "#0284c7" }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Historical Hazard Frequency</span>
+                        <span>{weights.historicalHazards || 20}%</span>
+                      </div>
+                      <div style={{ height: "3px", background: "#cbd5e1", borderRadius: "2px", overflow: "hidden" }}>
+                        <div style={{ width: `${weights.historicalHazards || 20}%`, height: "100%", background: "#d97706" }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="risk-advisory" style={{ margin: "6px 0 0", fontSize: "11px", color: "#334155", background: "#f8fafc", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                  <strong>Corridor Advisory:</strong> {activeRiskInfo.advisory || selectedRoute?.advisory}
+                </p>
+              </div>
+            );
+          })()}
         </section>
 
         {/* INTERACTIVE LEAFLET MAP PANEL */}
@@ -3019,9 +3154,6 @@ function App() {
                   <span style={{ fontSize: "10px", fontWeight: "bold", background: "#16a34a", color: "white", padding: "3px 10px", borderRadius: "12px", letterSpacing: "0.5px" }}>
                     📡 SELECTED ROUTE LIVE GPS TELEMETRY
                   </span>
-                  <span style={{ fontSize: "11px", color: "#64748b", background: "rgba(255,255,255,0.08)", padding: "3px 8px", borderRadius: "6px" }}>
-                    HARDWARE: {selectedRouteTelemetry.hardwareDevice || "Teltonika OBD-II GPS Tracker"}
-                  </span>
                 </div>
                 <h3 style={{ margin: "6px 0 2px", fontSize: "16px", color: "#f8fafc", display: "flex", alignItems: "center", gap: "8px" }}>
                   <span>🚚</span> Vehicle Call-Sign: <strong style={{ color: "#38bdf8" }}>{selectedRouteTelemetry.callSign}</strong> <small style={{ color: "#94a3b8", fontSize: "12px" }}>({selectedRouteTelemetry.vehicleId})</small>
@@ -3033,22 +3165,27 @@ function App() {
 
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button
-                  onClick={() => setRealGpsActive(!realGpsActive)}
+                  onClick={() => {
+                    const nextState = !isAnimPlaying;
+                    setIsAnimPlaying(nextState);
+                    setRealGpsActive(nextState);
+                  }}
                   style={{
-                    background: realGpsActive ? "#16a34a" : "#475569",
+                    background: isAnimPlaying ? "#dc2626" : "#16a34a",
                     color: "white",
                     border: "none",
-                    padding: "8px 14px",
+                    padding: "10px 18px",
                     borderRadius: "8px",
-                    fontSize: "11px",
+                    fontSize: "12px",
                     fontWeight: "bold",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
-                    gap: "6px"
+                    gap: "8px",
+                    boxShadow: isAnimPlaying ? "0 4px 12px rgba(220, 38, 38, 0.4)" : "0 4px 12px rgba(22, 163, 74, 0.4)"
                   }}
                 >
-                  📡 {realGpsActive ? "REAL GPS ACTIVE" : "ENABLE REAL GPS"}
+                  {isAnimPlaying ? "⏹️ Stop Live Tracking" : "▶️ Start Live GPS Tracking"}
                 </button>
               </div>
             </div>
@@ -3093,14 +3230,24 @@ function App() {
 
             {/* ROUTE PROGRESS BAR & INTERACTIVE SCRUBBER */}
             <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "12px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#cbd5e1", marginBottom: "6px", flexWrap: "wrap", gap: "6px" }}>
-                <span>
-                  🛣️ Selected Route Transit Progress: <strong style={{ color: "#38bdf8" }}>{routeProgressPercent.toFixed(1)}% Covered</strong> ({((selectedRoute?.distanceKm || 342.5) * (routeProgressPercent / 100)).toFixed(1)} / {selectedRoute?.distanceKm || 342.5} km)
-                </span>
-                <span>
-                  ⏱️ Live Speed Calculated ETA: <strong style={{ color: "#4ade80" }}>{Math.max(1, Math.round((((selectedRoute?.distanceKm || 342.5) * (1 - routeProgressPercent / 100)) / (selectedRouteTelemetry.speedKmH || 45)) * 60))} mins</strong>
-                </span>
-              </div>
+              {(() => {
+                const distKm = selectedRoute?.distanceKm || 342.5;
+                const spdKmH = selectedRouteTelemetry?.speedKmH || 48.5;
+                const totalTripSeconds = Math.round((distKm / spdKmH) * 3600);
+                const remainingSecsTotal = Math.max(0, Math.round(totalTripSeconds * (1 - (routeProgressPercent / 100))) - elapsedTrackingSeconds);
+                const displayMins = Math.floor(remainingSecsTotal / 60);
+                const displaySecs = remainingSecsTotal % 60;
+                return (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#cbd5e1", marginBottom: "6px", flexWrap: "wrap", gap: "6px" }}>
+                    <span>
+                      🛣️ Selected Route Transit Progress: <strong style={{ color: "#38bdf8" }}>{routeProgressPercent.toFixed(2)}% Covered</strong> ({((selectedRoute?.distanceKm || 342.5) * (routeProgressPercent / 100)).toFixed(2)} / {selectedRoute?.distanceKm || 342.5} km)
+                    </span>
+                    <span>
+                      ⏱️ Real-Time 1:1 Clock ETA: <strong style={{ color: "#4ade80" }}>{displayMins}m {displaySecs < 10 ? `0${displaySecs}` : displaySecs}s remaining</strong> <small style={{ color: "#94a3b8", fontSize: "10px" }}>(1 min per 60s)</small>
+                    </span>
+                  </div>
+                );
+              })()}
 
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <button
@@ -4310,11 +4457,11 @@ function App() {
             <div className="toast-header">
               <span className="toast-category-badge">{activeToast.category || "ALERT"}</span>
               <strong className="toast-title">
-                {activeToast.titles?.[selectedLang] || activeToast.titles?.English || activeToast.title || "Regional Alert"}
+                {renderLocalizedText(activeToast.titles || activeToast.title, language) || "Regional Alert"}
               </strong>
             </div>
             <p className="toast-message">
-              {activeToast.messages?.[selectedLang] || activeToast.messages?.English || activeToast.message}
+              {renderLocalizedText(activeToast.messages || activeToast.message, language)}
             </p>
             <div className="toast-meta">
               <span>📍 {activeToast.corridor || "NER Corridor"}</span>
