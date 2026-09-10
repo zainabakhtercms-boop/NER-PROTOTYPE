@@ -391,7 +391,7 @@ const INITIAL_NOTIFICATIONS = [
       Bengali: "🚚 ফ্লিট আপডেট: জরুরী মেডিকেল ত্রাণ কনভয় আলফা রওনা হয়েছে"
     },
     message: {
-      English: "Truck NER-TRIP-201 carrying vital vaccines & medicines departed Guwahati Central Hub. Real GPS Tracking Active.",
+      English: "Truck NER-TRIP-201 carrying vital vaccines & medicines departed Guwahati Central Hub. GPS Tracking Active (Simulated).",
       Hindi: "महत्वपूर्ण टीके और दवाएं लेकर ट्रक NER-TRIP-201 गुवाहाटी हब से रवाना हुआ। लाइव जीपीएस ट्रैकिंग चालू है।",
       Assamese: "প্ৰয়োজনীয় ঔষধ আৰু ভেকচিন লৈ ট্ৰাক NER-TRIP-201 গুৱাহাটীৰ পৰা যাত্ৰা আৰম্ভ কৰিছে। লাইভ GPS সক্ৰিয়।",
       Bengali: "জরুরী ওষুধ ও ভ্যাকসিন সহ ট্রাক NER-TRIP-201 গুয়াহাটি থেকে রওনা হয়েছে। লাইভ জিপিএস সক্রিয়।"
@@ -1153,6 +1153,17 @@ const getPointAtProgress = (points, progressRatio) => {
   return points[points.length - 1];
 };
 
+const getRoutePoints = (route) => {
+  if (!route?.geometry?.coordinates?.length) return [];
+  return route.geometry.coordinates.map((item) => {
+    if (Array.isArray(item)) {
+      if (item[0] > item[1]) return [item[1], item[0]];
+      return [item[0], item[1]];
+    }
+    return [item.lat || 26.1445, item.lon || 91.7362];
+  });
+};
+
 /* =========================================================
    ENHANCED MAP VIEW COMPONENT
 ========================================================= */
@@ -1172,18 +1183,7 @@ function MapView({
 }) {
   const map = useMap();
 
-  const getPrimaryPolylinePoints = () => {
-    if (selectedRoute?.geometry?.coordinates?.length) {
-      return selectedRoute.geometry.coordinates.map((item) => {
-        if (Array.isArray(item)) {
-          if (item[0] > item[1]) return [item[1], item[0]];
-          return [item[0], item[1]];
-        }
-        return [item.lat || 26.1445, item.lon || 91.7362];
-      });
-    }
-    return [];
-  };
+  const getPrimaryPolylinePoints = () => getRoutePoints(selectedRoute);
 
   const primaryPoints = getPrimaryPolylinePoints();
 
@@ -1282,7 +1282,7 @@ function MapView({
           <Popup>
             <div style={{ padding: "4px", maxWidth: "220px" }}>
               <span style={{ fontSize: "10px", fontWeight: "bold", background: "#16a34a", color: "white", padding: "2px 6px", borderRadius: "4px" }}>
-                📡 SELECTED ROUTE REAL GPS
+                📡 SELECTED ROUTE GPS (DEMO)
               </span>
               <div style={{ marginTop: "4px", fontSize: "13px", fontWeight: "bold", color: "#0f172a" }}>
                 AS-01-GC-9821 (Relief Convoy Alpha)
@@ -1432,6 +1432,9 @@ function MapView({
               <div style={{ fontSize: "11px", color: "#4b5563" }}>
                 📍 <strong>Route:</strong> {fv.origin} ➔ {fv.destination}
               </div>
+              <div style={{ fontSize: "11px", color: "#4b5563" }}>
+                📡 <strong>GPS Location (Demo):</strong> Lat {fv.currentLat.toFixed(4)}° N, Lon {fv.currentLon.toFixed(4)}° E
+              </div>
               <div style={{ fontSize: "11px", color: fv.status === "Delayed" ? "#dc2626" : "#16a34a", marginTop: "4px", fontWeight: "bold" }}>
                 Status: {fv.status} ({fv.speedKmH} km/h) • ETA: {fv.etaMinutes} min
               </div>
@@ -1445,7 +1448,7 @@ function MapView({
         <Marker position={activeVehiclePos} icon={realGpsVehicleIcon}>
           <Popup>
             <div style={{ padding: "4px" }}>
-              <strong style={{ color: "#16a34a" }}>📡 REAL GPS VEHICLE TRACKER ACTIVE</strong>
+              <strong style={{ color: "#16a34a" }}>📡 VEHICLE TRACKER (SIMULATED GPS)</strong>
               <div style={{ fontSize: "12px", margin: "4px 0" }}>
                 Latitude: <strong>{activeVehiclePos[0].toFixed(5)}</strong><br />
                 Longitude: <strong>{activeVehiclePos[1].toFixed(5)}</strong><br />
@@ -1453,7 +1456,7 @@ function MapView({
                 GPS Accuracy: <strong>{realGpsPosition?.accuracy || 8} meters</strong>
               </div>
               <span style={{ fontSize: "10px", background: "#dcfce7", color: "#15803d", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold" }}>
-                ● Real-Time Hardware Geolocation Stream
+                ● Geolocation Telemetry Stream (Demo)
               </span>
             </div>
           </Popup>
@@ -1494,12 +1497,12 @@ function App() {
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [emergencyDetails, setEmergencyDetails] = useState(null);
 
-  // Route Planning State (Empty by default — User selects origin & destination)
-  const [source, setSource] = useState("");
-  const [destination, setDestination] = useState("");
+  // Route Planning State (Default initialized with primary Guwahati-Silchar strategic corridor)
+  const [source, setSource] = useState("Guwahati, Assam");
+  const [destination, setDestination] = useState("Silchar, Assam");
   const [vehicle, setVehicle] = useState("mediumTruck");
-  const [routes, setRoutes] = useState([]);
-  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [routes, setRoutes] = useState([DEFAULT_ROUTE_DATA]);
+  const [selectedRoute, setSelectedRoute] = useState(DEFAULT_ROUTE_DATA);
   const [destRiskInfo, setDestRiskInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1660,18 +1663,18 @@ function App() {
   const [elapsedTrackingSeconds, setElapsedTrackingSeconds] = useState(0);
 
   const [selectedRouteTelemetry, setSelectedRouteTelemetry] = useState({
-    vehicleId: "AS-01-GC-9821",
-    callSign: "RELIEF-CONVOY-ALPHA",
-    driverName: "Captain Rajesh Kalita",
-    vehicleType: "Heavy Relief Cargo (15 Ton)",
+    vehicleId: "NER-FLEET-1001",
+    callSign: "RELIEF-TRUCK-ALPHA",
+    driverName: "Rajesh Kalita",
+    vehicleType: "Medium Supply Truck (7.5 Ton)",
     status: "ACTIVE_GPS_TRACKING",
-    speedKmH: 48.5,
+    speedKmH: 45.0,
     altitudeMeters: 284,
     headingDegrees: 125,
     accuracyMeters: 4.2,
     satelliteFix: "3D_LOCK_9_SATS",
-    currentLat: 25.5788,
-    currentLon: 91.8933,
+    currentLat: 26.1445,
+    currentLon: 91.7362,
     hardwareDevice: "Teltonika FMB920 OBD-II GPS Tracker",
     isRealGpsStream: true
   });
@@ -1687,6 +1690,89 @@ function App() {
   const [incidentsList, setIncidentsList] = useState([]);
   const [fleetVehicles, setFleetVehicles] = useState(INITIAL_FLEET);
   const [districtsMatrix, setDistrictsMatrix] = useState(INITIAL_DISTRICTS);
+
+  // Synchronize Active Fleet with Route Optimization Engine Search
+  useEffect(() => {
+    const routePoints = getRoutePoints(selectedRoute);
+    const pos = routePoints.length
+      ? getPointAtProgress(routePoints, (routeProgressPercent || 0) / 100)
+      : [26.1445, 91.7362];
+
+    const currentOrigin = source || "Guwahati, Assam";
+    const currentDest = destination || "Silchar, Assam";
+    const currentSpeed = emergencyMode ? 55 : (selectedRoute?.speedKmH || 45);
+    const currentEta = selectedRoute?.durationMinutes || 465;
+
+    const vehicleConfigs = {
+      mediumTruck: {
+        id: "NER-FLEET-1001",
+        vehicleName: "Medical Relief Truck Alpha",
+        driverName: "Rajesh Kalita",
+        contact: "+91-9864012345",
+        vehicleType: "mediumTruck",
+        cargoType: emergencyMode ? "Critical Vaccines & Emergency Trauma Medical Kits" : "Essential Medicines & Vaccines",
+        cargoWeightKg: 6500
+      },
+      heavyTruck: {
+        id: "NER-FLEET-1002",
+        vehicleName: "Food Supply Convoy Bravo",
+        driverName: "Biren Gogoi",
+        contact: "+91-9435098765",
+        vehicleType: "heavyTruck",
+        cargoType: emergencyMode ? "Emergency Life-Saving Rations & Food Kits" : "Rice, Pulses & Essential Commodity Rations",
+        cargoWeightKg: 14000
+      },
+      deliveryVan: {
+        id: "NER-FLEET-1003",
+        vehicleName: "Disaster Emergency Tanker Charlie",
+        driverName: "Subhash Roy",
+        contact: "+91-9774011223",
+        vehicleType: "deliveryVan",
+        cargoType: emergencyMode ? "Clean Drinking Water & Disaster Survival Kits" : "Clean Drinking Water & Relief Kits",
+        cargoWeightKg: 3200
+      }
+    };
+
+    const activeConfig = vehicleConfigs[vehicle] || vehicleConfigs.mediumTruck;
+
+    // 1. The primary vehicle dispatched according to Route Optimization Engine search:
+    const activeRouteVehicle = {
+      ...activeConfig,
+      origin: currentOrigin,
+      destination: currentDest,
+      currentLat: pos[0],
+      currentLon: pos[1],
+      speedKmH: currentSpeed,
+      status: "In Transit",
+      delayReason: selectedRoute?.environmentalDelayMinutes ? `Env Delay +${selectedRoute.environmentalDelayMinutes}m` : "None",
+      etaMinutes: currentEta,
+      isRealGpsActive: true,
+      isRouteOptimized: true
+    };
+
+    // 2. Companion relief fleet units in the NER logistics network:
+    const otherVehicles = Object.keys(vehicleConfigs)
+      .filter((k) => k !== vehicle)
+      .map((k) => {
+        const conf = vehicleConfigs[k];
+        const defaultItem = INITIAL_FLEET.find((v) => v.id === conf.id) || INITIAL_FLEET[0];
+        return {
+          ...conf,
+          origin: defaultItem.origin,
+          destination: defaultItem.destination,
+          currentLat: defaultItem.currentLat,
+          currentLon: defaultItem.currentLon,
+          speedKmH: defaultItem.speedKmH,
+          status: defaultItem.status,
+          delayReason: defaultItem.delayReason,
+          etaMinutes: defaultItem.etaMinutes,
+          isRealGpsActive: true,
+          isRouteOptimized: false
+        };
+      });
+
+    setFleetVehicles([activeRouteVehicle, ...otherVehicles]);
+  }, [selectedRoute, source, destination, vehicle, emergencyMode, routeProgressPercent]);
 
   // REAL-TIME ROAD & BRIDGE ACCESSIBILITY STATE
   const [isNotifPopoverOpen, setIsNotifPopoverOpen] = useState(false);
@@ -1946,7 +2032,7 @@ function App() {
             lat: liveGps.lat,
             lon: liveGps.lon,
             speed: liveGps.speedKmH,
-            status: "In Transit (Live REAL GPS)"
+            status: "In Transit (Simulated GPS)"
           })
         }).catch(() => {});
       },
@@ -2454,6 +2540,26 @@ function App() {
       if (data.destinationCoords) {
         fetchWeather(data.destinationCoords.lat, data.destinationCoords.lon, destination);
       }
+
+      // Reset progress to 0% at origin for newly calculated route
+      setRouteProgressPercent(0);
+
+      // Dynamically update Selected Route Telemetry to match newly calculated route & vehicle
+      const firstCoord = data.recommendedRoute?.geometry?.coordinates?.[0];
+      const startLat = data.sourceCoords?.lat || (firstCoord ? (firstCoord[0] > firstCoord[1] ? firstCoord[1] : firstCoord[0]) : 26.1445);
+      const startLon = data.sourceCoords?.lon || (firstCoord ? (firstCoord[0] > firstCoord[1] ? firstCoord[0] : firstCoord[1]) : 91.7362);
+      const spd = data.trafficSummary?.averageSpeedKmH || (activeEmergency ? 55 : 48.5);
+
+      setSelectedRouteTelemetry((prev) => ({
+        ...prev,
+        vehicleId: activeVehicle === "heavyTruck" ? "NER-FLEET-1002" : activeVehicle === "deliveryVan" ? "NER-FLEET-1003" : "NER-FLEET-1001",
+        callSign: activeVehicle === "heavyTruck" ? "FOOD-CONVOY-BRAVO" : activeVehicle === "deliveryVan" ? "EMERGENCY-TANKER-CHARLIE" : "RELIEF-TRUCK-ALPHA",
+        vehicleType: activeVehicle === "heavyTruck" ? "Heavy Cargo Truck (15 Ton)" : activeVehicle === "deliveryVan" ? "Emergency Delivery Van (2.5 Ton)" : "Medium Supply Truck (7.5 Ton)",
+        currentLat: startLat,
+        currentLon: startLon,
+        speedKmH: spd,
+        status: "ACTIVE_GPS_TRACKING"
+      }));
     } catch (err) {
       console.warn("Route API warning:", err.message);
     } finally {
@@ -3011,9 +3117,9 @@ function App() {
           <div className="map-header">
             <div>
               <span>LEAFLET GIS INTELLIGENCE MAP</span>
-              <h2>🗺️ NER Accessibility & Selected Route Real GPS Map</h2>
+              <h2>🗺️ NER Accessibility & Selected Route GPS Telemetry Map</h2>
             </div>
-            <div className="map-live-status">● LIVE REAL GPS STREAM</div>
+            <div className="map-live-status">● ROUTE GPS TRACKER</div>
           </div>
 
           <div className="big-map">
@@ -3134,7 +3240,7 @@ function App() {
                   onClick={() => setRealGpsActive(!realGpsActive)}
                   style={{ background: realGpsActive ? "#16a34a" : "#2563eb", color: "white" }}
                 >
-                  {realGpsActive ? "📡 REAL GPS TRACKING ACTIVE" : "📍 ACTIVATE REAL GPS TRACKER"}
+                  {realGpsActive ? "📡 ROUTE TRACKING ACTIVE" : "📍 ACTIVATE ROUTE TRACKER"}
                 </button>
                 <button
                   className="complete-route-btn"
@@ -4336,14 +4442,14 @@ function App() {
               </div>
 
               <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🌐 Real GPS Latitude</span>
+                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>🌐 GPS Latitude (Simulated)</span>
                 <strong style={{ fontSize: "13px", color: "#16a34a" }}>
                   {(realGpsPosition ? realGpsPosition.lat : selectedRouteTelemetry.currentLat || 25.5788).toFixed(5)}° N
                 </strong>
               </div>
 
               <div style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📍 Real GPS Longitude</span>
+                <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>📍 GPS Longitude (Simulated)</span>
                 <strong style={{ fontSize: "13px", color: "#16a34a" }}>
                   {(realGpsPosition ? realGpsPosition.lon : selectedRouteTelemetry.currentLon || 91.8933).toFixed(5)}° E
                 </strong>
@@ -4416,34 +4522,71 @@ function App() {
 
           <section className="full-width-section" id="active-fleet">
             <div className="sih-card" style={{ background: "white", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", padding: "24px", marginBottom: "24px" }}>
-              <div className="sih-card-title flex-between" style={{ marginBottom: "16px" }}>
+              <div className="sih-card-title flex-between" style={{ marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
                 <div>
-                  <span className="kicker-tag" style={{ background: "#eff6ff", color: "#1e40af" }}>
-                    🚚 ACTIVE ESSENTIAL COMMODITY SUPPLY FLEET
-                  </span>
-                  <h2 style={{ margin: "4px 0 0", color: "#0f172a", fontSize: "18px" }}>Live Vehicle Telemetry & Emergency Relief Fleet</h2>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span className="kicker-tag" style={{ background: "#eff6ff", color: "#1e40af" }}>
+                      🚚 ACTIVE ESSENTIAL COMMODITY SUPPLY FLEET
+                    </span>
+                    <span style={{ fontSize: "10px", fontWeight: "700", background: "#dcfce7", color: "#166534", border: "1px solid #86efac", padding: "2px 8px", borderRadius: "12px", letterSpacing: "0.4px" }}>
+                      🟢 SYNCHRONIZED WITH ROUTE OPTIMIZATION ENGINE
+                    </span>
+                  </div>
+                  <h2 style={{ margin: "6px 0 2px", color: "#0f172a", fontSize: "18px" }}>Emergency Relief Fleet Monitoring</h2>
                   <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
-                    Real-time tracking of medical, food, and water emergency transit vehicles across NER mountain corridors.
+                    GPS-based monitoring of essential-supply vehicles across NER mountain corridors • Active corridor: <strong style={{ color: "#0F766E" }}>{source || "Guwahati, Assam"} ➔ {destination || "Silchar, Assam"}</strong>
                   </p>
                 </div>
                 <span style={{ fontSize: "12px", background: "#dbeafe", color: "#1e40af", padding: "6px 14px", borderRadius: "20px", fontWeight: "bold" }}>
-                  📡 LIVE VEHICLES: {fleetVehicles.length}
+                  🚚 MONITORED VEHICLES: {fleetVehicles.length} ACTIVE
                 </span>
+              </div>
+
+              {/* SIH ALIGNMENT NOTICE */}
+              <div style={{ background: "#f0fdf4", borderLeft: "3px solid #16a34a", padding: "10px 14px", borderRadius: "0 8px 8px 0", marginBottom: "16px", fontSize: "12px", color: "#166534", lineHeight: "1.5" }}>
+                🎯 <strong>SIH Prototype Implementation:</strong> Tracking movement of vehicles carrying essential commodities, medicines, agricultural produce, and construction materials through GPS integration.
+                <div style={{ fontSize: "11px", color: "#15803d", marginTop: "2px" }}>
+                  ✅ <strong>Live Route Synchronization:</strong> Vehicle coordinates, cargo payload, speed, and transit status are directly driven by your search in the <strong>Route Optimization Engine (Find Best Delivery Route)</strong>.
+                </div>
               </div>
 
               <div className="fleet-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
                 {fleetVehicles.map((fv) => (
-                  <div key={fv.id} className="fleet-item" style={{ background: "#f8fafc", borderRadius: "10px", padding: "16px", border: "1px solid #e2e8f0" }}>
+                  <div
+                    key={fv.id}
+                    className="fleet-item"
+                    style={{
+                      background: fv.isRouteOptimized ? "#f0fdf4" : "#f8fafc",
+                      borderRadius: "10px",
+                      padding: "16px",
+                      border: fv.isRouteOptimized ? "1.5px solid #86efac" : "1px solid #e2e8f0",
+                      boxShadow: fv.isRouteOptimized ? "0 2px 8px rgba(22, 163, 74, 0.1)" : "none"
+                    }}
+                  >
                     <div className="fleet-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <strong style={{ fontSize: "14px", color: "#0f172a" }}>{fv.vehicleName}</strong>
+                      <div>
+                        <strong style={{ fontSize: "14px", color: "#0f172a" }}>{fv.vehicleName}</strong>
+                        {fv.isRouteOptimized ? (
+                          <span style={{ display: "inline-block", marginLeft: "6px", fontSize: "10px", background: "#16a34a", color: "white", padding: "1px 7px", borderRadius: "10px", fontWeight: "700" }}>
+                            🎯 Searched Route Dispatch
+                          </span>
+                        ) : (
+                          <span style={{ display: "inline-block", marginLeft: "6px", fontSize: "10px", background: "#e2e8f0", color: "#475569", padding: "1px 6px", borderRadius: "10px", fontWeight: "600" }}>
+                            Regional Convoy
+                          </span>
+                        )}
+                      </div>
                       <span className={`status-tag ${fv.status === "Delayed" ? "delayed" : "in-transit"}`}>
                         {fv.status}
                       </span>
                     </div>
                     <div className="fleet-details" style={{ fontSize: "12px", color: "#475569", display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <span>📦 <strong>Cargo:</strong> {fv.cargoType} ({fv.cargoWeightKg} kg)</span>
-                      <span>📍 <strong>Route:</strong> {fv.origin} ➔ {fv.destination}</span>
-                      <span>📡 <strong>Real GPS:</strong> Lat {fv.currentLat.toFixed(4)}, Lon {fv.currentLon.toFixed(4)} ({fv.speedKmH} km/h)</span>
+                      <span>📦 <strong>Cargo:</strong> {fv.cargoType} ({fv.cargoWeightKg ? fv.cargoWeightKg.toLocaleString() : "6,500"} kg)</span>
+                      <span>📍 <strong>Route:</strong> <strong>{fv.origin}</strong> ➔ <strong>{fv.destination}</strong></span>
+                      <span>📡 <strong>GPS Location:</strong> Lat {Number(fv.currentLat).toFixed(4)}° N, Lon {Number(fv.currentLon).toFixed(4)}° E ({fv.speedKmH} km/h)</span>
+                      {fv.etaMinutes && (
+                        <span>⏱️ <strong>ETA:</strong> {Math.floor(fv.etaMinutes / 60)}h {fv.etaMinutes % 60}m {fv.delayReason && fv.delayReason !== "None" ? `(${fv.delayReason})` : ""}</span>
+                      )}
                     </div>
                   </div>
                 ))}

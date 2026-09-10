@@ -1124,6 +1124,10 @@ app.post("/api/trips/:id/complete", (req, res) => {
   res.status(404).json({ success: false, message: "Trip not found" });
 });
 
+app.get("/api/fleet", (req, res) => {
+  res.json({ success: true, fleet: FLEET_VEHICLES, isDemo: true });
+});
+
 app.post("/api/fleet/update-gps", (req, res) => {
   const { vehicleId, lat, lon, speed, status } = req.body;
   if (!vehicleId || !lat || !lon) {
@@ -1137,7 +1141,7 @@ app.post("/api/fleet/update-gps", (req, res) => {
     if (speed !== undefined) FLEET_VEHICLES[index].speedKmH = parseFloat(speed);
     if (status) FLEET_VEHICLES[index].status = status;
     FLEET_VEHICLES[index].lastGpsUpdate = new Date().toISOString();
-    return res.json({ success: true, message: "Real GPS telemetry updated", vehicle: FLEET_VEHICLES[index] });
+    return res.json({ success: true, message: "GPS telemetry updated (demo)", vehicle: FLEET_VEHICLES[index] });
   }
 
   res.status(404).json({ error: "Vehicle not found" });
@@ -1247,7 +1251,7 @@ let MULTILINGUAL_NOTIFICATIONS = [
       Bengali: "🚚 ফ্লিট আপডেট: জরুরী মেডিকেল ত্রাণ কনভয় আলফা রওনা হয়েছে"
     },
     message: {
-      English: "Truck NER-TRIP-201 carrying vital vaccines & medicines departed Guwahati Central Hub. Real GPS Tracking Active.",
+      English: "Truck NER-TRIP-201 carrying vital vaccines & medicines departed Guwahati Central Hub. GPS Tracking Active (Simulated).",
       Hindi: "महत्वपूर्ण टीके और दवाएं लेकर ट्रक NER-TRIP-201 गुवाहाटी हब से रवाना हुआ। लाइव जीपीएस ट्रैकिंग चालू है।",
       Assamese: "প্ৰয়োজনীয় ঔষধ আৰু ভেকচিন লৈ ট্ৰাক NER-TRIP-201 গুৱাহাটীৰ পৰা যাত্ৰা আৰম্ভ কৰিছে। লাইভ GPS সক্ৰিয়।",
       Bengali: "জরুরী ওষুধ ও ভ্যাকসিন সহ ট্রাক NER-TRIP-201 গুয়াহাটি থেকে রওনা হয়েছে। লাইভ জিপিএস সক্রিয়।"
@@ -1985,6 +1989,20 @@ app.get("/api/route", async (req, res) => {
   const matchedTraffic = NER_REALTIME_TRAFFIC.find(t =>
     source.toUpperCase().includes(t.state) || destination.toUpperCase().includes(t.state)
   ) || NER_REALTIME_TRAFFIC[0];
+
+  // Synchronize Active Fleet Telemetry with the searched delivery route
+  const fleetIdx = vehicle === "heavyTruck" ? 1 : vehicle === "deliveryVan" ? 2 : 0;
+  if (FLEET_VEHICLES[fleetIdx]) {
+    FLEET_VEHICLES[fleetIdx].origin = source;
+    FLEET_VEHICLES[fleetIdx].destination = destination;
+    FLEET_VEHICLES[fleetIdx].currentLat = srcLat;
+    FLEET_VEHICLES[fleetIdx].currentLon = srcLon;
+    FLEET_VEHICLES[fleetIdx].speedKmH = isEmergency ? 55 : 45;
+    FLEET_VEHICLES[fleetIdx].etaMinutes = recommendedRoute.durationMinutes;
+    FLEET_VEHICLES[fleetIdx].status = "In Transit";
+    FLEET_VEHICLES[fleetIdx].isRouteOptimized = true;
+    FLEET_VEHICLES[fleetIdx].lastGpsUpdate = new Date().toISOString();
+  }
 
   res.json({
     success: true,
