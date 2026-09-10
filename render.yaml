@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ner-logistics-platform
+    env: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/traffic
+    envVars:
+      - key: NODE_VERSION
+        value: 20

@@ -1,0 +1,14 @@
+{
+  "name": "ner-logistics-intelligence-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NER Logistics & Disaster Management Intelligence Platform",
+  "main": "NER/backend/server.js",
+  "scripts": {
+    "install:frontend": "npm install --prefix NER/frontend",
+    "install:backend": "npm install --prefix NER/backend",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "build": "npm install --prefix NER/frontend && npm run build --prefix NER/frontend && npm install --prefix NER/backend",
+    "start": "node NER/backend/server.js"
+  }
+}

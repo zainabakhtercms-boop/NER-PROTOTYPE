@@ -1,7 +1,14 @@
 {
+  "name": "ner-platform",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend",
+    "start": "node backend/server.js"
+  },
   "dependencies": {
     "leaflet": "^1.9.4",
     "leaflet-routing-machine": "^3.2.12",
     "react-leaflet": "^5.0.0"
   }
 }
+

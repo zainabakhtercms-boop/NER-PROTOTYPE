@@ -1,10 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const { execFileSync } = require("child_process");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -666,9 +667,10 @@ function predictMLRiskWithPythonBoth(state, district, rainfall = 190) {
       String(rainfall || 190),
       "BOTH"
     ];
-    const result = execFileSync("python", args, {
+    const pyCmd = process.env.PYTHON_CMD || (process.platform === "win32" ? "python" : "python3");
+    const result = execFileSync(pyCmd, args, {
       encoding: "utf8",
-      timeout: 5000
+      timeout: 1500
     });
     const parsed = JSON.parse(result);
     if (parsed && parsed.primary && parsed.bypass) {
@@ -1278,7 +1280,7 @@ app.get("/api/ml-risk", (req, res) => {
   const state = req.query.state || "ASSAM";
   const district = req.query.district || "Silchar";
   const rainfall = req.query.rainfall || 180;
-  res.json(predictMLRiskWithPython(state, district, rainfall));
+  res.json(predictMLRiskWithPythonBoth(state, district, rainfall));
 });
 
 /* =========================================================
@@ -2043,6 +2045,18 @@ app.get("/api/route", async (req, res) => {
   });
 });
 
+// Serve production frontend build if present
+const frontendDist = path.join(__dirname, "../frontend/dist");
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.use((req, res) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({ error: "API endpoint not found" });
+    }
+    res.sendFile(path.join(frontendDist, "index.html"));
+  });
+}
+
 app.listen(PORT, () => {
-  console.log(`NER Logistics Backend running on http://localhost:${PORT}`);
+  console.log(`NER Logistics Backend running on port ${PORT}`);
 });

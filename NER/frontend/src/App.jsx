@@ -18,6 +18,8 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 /* =========================================================
    MULTILINGUAL TRANSLATION SYSTEM (NER REGIONAL LANGUAGES)
 ========================================================= */
@@ -1957,14 +1959,14 @@ function App() {
     for (const item of currentQueue) {
       try {
         if (item.actionType === "SUBMIT_INCIDENT") {
-          await fetch("http://localhost:5000/api/incidents", {
+          await fetch(`${API_BASE}/api/incidents`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(item.payload)
           });
           syncedCount++;
         } else if (item.actionType === "UPDATE_INFRA_STATUS") {
-          await fetch(`http://localhost:5000/api/accessibility/infrastructure/${item.payload.infraId}/status`, {
+          await fetch(`${API_BASE}/api/accessibility/infrastructure/${item.payload.infraId}/status`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2024,7 +2026,7 @@ function App() {
         setRealGpsPosition(liveGps);
 
         // Send live REAL GPS telemetry to backend endpoint
-        fetch("http://localhost:5000/api/fleet/update-gps", {
+        fetch(`${API_BASE}/api/fleet/update-gps`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2063,7 +2065,7 @@ function App() {
 
   const fetchFloodRisk = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/flood-risk");
+      const res = await fetch(`${API_BASE}/api/flood-risk`);
       const data = await res.json();
       if (data.success) {
         setFloodRiskData(data);
@@ -2073,7 +2075,7 @@ function App() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/notifications");
+      const res = await fetch(`${API_BASE}/api/notifications`);
       const data = await res.json();
       if (data.notifications?.length) {
         setNotifications((prev) => {
@@ -2130,8 +2132,8 @@ function App() {
         return;
       }
       const url = search && search.trim()
-        ? `http://localhost:5000/api/trips?search=${encodeURIComponent(search.trim())}`
-        : "http://localhost:5000/api/trips";
+        ? `${API_BASE}/api/trips?search=${encodeURIComponent(search.trim())}`
+        : `${API_BASE}/api/trips`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.trips?.length) {
@@ -2195,7 +2197,7 @@ function App() {
 
   const fetchTraffic = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/traffic");
+      const res = await fetch(`${API_BASE}/api/traffic`);
       const data = await res.json();
       if (data.corridors?.length) {
         setTrafficList(data.corridors);
@@ -2206,7 +2208,7 @@ function App() {
 
   const fetchInfrastructure = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/accessibility/infrastructure");
+      const res = await fetch(`${API_BASE}/api/accessibility/infrastructure`);
       const data = await res.json();
       if (data.infrastructure?.length) setInfrastructureList(data.infrastructure);
     } catch (e) {}
@@ -2222,7 +2224,7 @@ function App() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/accessibility/infrastructure/${infraId}/status`, {
+      const res = await fetch(`${API_BASE}/api/accessibility/infrastructure/${infraId}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2269,7 +2271,7 @@ function App() {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/api/accessibility/infrastructure", {
+      const res = await fetch(`${API_BASE}/api/accessibility/infrastructure`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newObj)
@@ -2292,7 +2294,7 @@ function App() {
 
   const fetchWeather = async (lat, lon, location) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/weather?lat=${lat}&lon=${lon}&location=${encodeURIComponent(location || "")}`);
+      const res = await fetch(`${API_BASE}/api/weather?lat=${lat}&lon=${lon}&location=${encodeURIComponent(location || "")}`);
       const data = await res.json();
       if (data && data.temperature) setWeatherData(data);
     } catch (e) {}
@@ -2304,7 +2306,7 @@ function App() {
         setDisruptions([]);
         return;
       }
-      const res = await fetch("http://localhost:5000/api/disruptions");
+      const res = await fetch(`${API_BASE}/api/disruptions`);
       const data = await res.json();
       if (data.disruptions?.length) setDisruptions(data.disruptions);
     } catch (e) {}
@@ -2316,7 +2318,7 @@ function App() {
         setIncidentsList([]);
         return;
       }
-      const res = await fetch("http://localhost:5000/api/incidents");
+      const res = await fetch(`${API_BASE}/api/incidents`);
       const data = await res.json();
       if (data.incidents) setIncidentsList(data.incidents);
     } catch (e) {}
@@ -2324,7 +2326,7 @@ function App() {
 
   const fetchFleet = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/fleet");
+      const res = await fetch(`${API_BASE}/api/fleet`);
       const data = await res.json();
       if (data.fleet?.length) setFleetVehicles(data.fleet);
     } catch (e) {}
@@ -2332,7 +2334,7 @@ function App() {
 
   const fetchDistricts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/districts");
+      const res = await fetch(`${API_BASE}/api/districts`);
       const data = await res.json();
       if (data.districts?.length) setDistrictsMatrix(data.districts);
     } catch (e) {}
@@ -2399,7 +2401,7 @@ function App() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/incidents", {
+      const res = await fetch(`${API_BASE}/api/incidents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reportData)
@@ -2528,7 +2530,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/route?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&vehicle=${activeVehicle}&emergency=${activeEmergency}`
+        `${API_BASE}/api/route?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&vehicle=${activeVehicle}&emergency=${activeEmergency}`
       );
       const data = await response.json();
 
