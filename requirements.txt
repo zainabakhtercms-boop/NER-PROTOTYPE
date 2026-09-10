@@ -1,7 +1,1 @@
-flask
-gunicorn
-spacy
-nltk
-scikit-learn
-pandas
-numpy
+
